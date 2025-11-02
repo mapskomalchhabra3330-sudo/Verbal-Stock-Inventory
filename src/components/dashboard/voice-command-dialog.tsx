@@ -27,17 +27,9 @@ type Status = "idle" | "listening" | "processing" | "success" | "error"
 export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogProps) {
   const [status, setStatus] = useState<Status>("idle")
   const [result, setResult] = useState<VoiceCommandResponse | null>(null)
-  const {
-    isListening,
-    transcript,
-    startListening,
-    stopListening,
-    hasRecognitionSupport,
-    error: recognitionError,
-  } = useSpeechRecognition()
   const router = useRouter()
-
-  const handleCommandProcessing = useCallback(async (command: string) => {
+  
+  const handleProcessCommand = useCallback(async (command: string) => {
     if (command.trim() === "") {
         setStatus("idle")
         return
@@ -48,39 +40,36 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
       setResult(res)
       setStatus(res.success ? "success" : "error")
 
-      if (res.action === 'REFRESH_DASHBOARD') {
+      if (res.action === 'REFRESH_DASHBOARD' || res.action === 'REFRESH_INVENTORY') {
         router.refresh()
       }
-      if (res.action === 'REFRESH_INVENTORY') {
-        router.refresh()
-      }
-      if (res.action === 'OPEN_ADD_ITEM_DIALOG') {
-         // This needs to be handled by the parent component that calls this dialog
-      }
-
+      
     } catch (e) {
       setResult({ success: false, message: "An unexpected error occurred." })
       setStatus("error")
     }
-  }, [router])
+  }, [router]);
+
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    hasRecognitionSupport,
+    error: recognitionError,
+  } = useSpeechRecognition({ onTranscriptFinal: handleProcessCommand });
+
 
   useEffect(() => {
     if (open) {
-        setStatus("listening");
-        setResult(null);
-        startListening();
+      setStatus("listening")
+      setResult(null)
+      startListening()
     } else {
-        stopListening();
-        setStatus("idle");
+      stopListening()
+      setStatus("idle")
     }
-  }, [open, startListening, stopListening]);
-
-
-  useEffect(() => {
-    if (!isListening && transcript && status === 'listening') {
-      handleCommandProcessing(transcript)
-    }
-  }, [isListening, transcript, handleCommandProcessing, status])
+  }, [open]) // Dependencies simplified
 
   useEffect(() => {
     if(recognitionError) {
@@ -92,10 +81,9 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
   const handleMicClick = () => {
     if (isListening) {
       stopListening()
-      // The processing will be triggered by the `isListening` change in the useEffect
     } else {
-      startListening()
       setStatus('listening');
+      startListening()
     }
   }
   
@@ -105,7 +93,7 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
         return {
           icon: <Mic className="size-12 text-primary animate-pulse" />,
           title: "Listening...",
-          description: "Speak your command clearly.",
+          description: transcript || "Speak your command clearly.",
         }
       case "processing":
         return {
@@ -138,7 +126,9 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
   const { icon, title, description } = getStatusContent()
 
   if (!hasRecognitionSupport) {
-      return null;
+    // This should be handled by the parent, but as a fallback:
+    if (open) onOpenChange(false)
+    return null
   }
 
   return (
