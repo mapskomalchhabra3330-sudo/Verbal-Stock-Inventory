@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
 import { Mic, CircleUser, Settings, LogOut } from "lucide-react"
 
@@ -27,6 +27,12 @@ export function DashboardHeader() {
   const { isMobile } = useSidebar()
   const pathname = usePathname()
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false)
+  const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false)
+
+  useEffect(() => {
+    setHasSpeechRecognition(typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window));
+  }, []);
+
 
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
@@ -37,15 +43,17 @@ export function DashboardHeader() {
         </h1>
       </div>
       <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          className="rounded-full"
-          onClick={() => setIsVoiceDialogOpen(true)}
-        >
-          <Mic className="size-5" />
-          <span className="sr-only">Use Voice Command</span>
-        </Button>
+        {hasSpeechRecognition && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+            onClick={() => setIsVoiceDialogOpen(true)}
+          >
+            <Mic className="size-5" />
+            <span className="sr-only">Use Voice Command</span>
+          </Button>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
@@ -72,7 +80,7 @@ export function DashboardHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <VoiceCommandDialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen} />
+      {hasSpeechRecognition && <VoiceCommandDialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen} />}
     </header>
   )
 }

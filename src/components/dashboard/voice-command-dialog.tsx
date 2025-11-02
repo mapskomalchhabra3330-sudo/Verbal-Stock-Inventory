@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Mic, Loader, CheckCircle, XCircle, MicOff, BrainCircuit } from "lucide-react"
+import { Mic, BrainCircuit, CheckCircle, XCircle, MicOff } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import {
@@ -153,9 +153,8 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
             title: "Unsupported Browser",
             description: "Speech recognition is not supported in your browser. Please try Chrome or Safari.",
         })
-        // onOpenChange(false); // This was causing the loop
-      }
-  }, [hasRecognitionSupport, open, toast]);
+    }
+  }, [hasRecognitionSupport, open, toast, onOpenChange]);
 
   if (!hasRecognitionSupport) {
       return null;
