@@ -15,13 +15,42 @@ type UseSpeechRecognitionOptions = {
   onTranscriptFinal?: (transcript: string) => void;
 };
 
-
 export const useSpeechRecognition = ({ onTranscriptFinal }: UseSpeechRecognitionOptions = {}): SpeechRecognitionHook => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const finalTranscriptTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleResult = useCallback((event: SpeechRecognitionEvent) => {
+    let interimTranscript = '';
+    let finalTranscript = '';
+
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+    
+    setTranscript(finalTranscript + interimTranscript);
+
+    if (finalTranscript && onTranscriptFinal) {
+      onTranscriptFinal(finalTranscript.trim());
+      if(recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    }
+  }, [onTranscriptFinal]);
+
+  const handleEnd = useCallback(() => {
+    setIsListening(false);
+    setTranscript('');
+  }, []);
+
+  const handleError = useCallback((event: SpeechRecognitionErrorEvent) => {
+    setError(event.error);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -39,74 +68,40 @@ export const useSpeechRecognition = ({ onTranscriptFinal }: UseSpeechRecognition
     recognition.interimResults = true;
     recognition.lang = 'en-US';
 
-    recognition.onresult = (event) => {
-        let interimTranscript = '';
-        let finalTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-                finalTranscript += event.results[i][0].transcript;
-            } else {
-                interimTranscript += event.results[i][0].transcript;
-            }
-        }
-        setTranscript(transcript + finalTranscript + interimTranscript);
-
-        if(finalTranscriptTimeoutRef.current){
-            clearTimeout(finalTranscriptTimeoutRef.current);
-        }
-
-        if(finalTranscript){
-            finalTranscriptTimeoutRef.current = setTimeout(() => {
-                if(onTranscriptFinal){
-                    onTranscriptFinal(finalTranscript.trim());
-                }
-                recognition.stop();
-            }, 1000);
-        }
-    };
-
-    recognition.onerror = (event) => {
-      setError(event.error);
-    };
-    
-    recognition.onend = () => {
-      setIsListening(false);
-    };
-
     recognitionRef.current = recognition;
 
     return () => {
-      if(finalTranscriptTimeoutRef.current){
-            clearTimeout(finalTranscriptTimeoutRef.current);
-      }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
-        recognitionRef.current = null;
       }
     };
-  }, [onTranscriptFinal]);
+  }, []);
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
+      const recognition = recognitionRef.current;
       setTranscript('');
       setError(null);
+
+      recognition.onresult = handleResult;
+      recognition.onend = handleEnd;
+      recognition.onerror = handleError;
+
       try {
-        recognitionRef.current.start();
+        recognition.start();
         setIsListening(true);
-      } catch(e) {
-        // Ignore "already started" error, as we have a guard.
-        // This can happen in some race conditions with React's StrictMode.
-        if((e as DOMException).name !== 'InvalidStateError') {
-            setError((e as DOMException).message);
+      } catch (e) {
+        if ((e as DOMException).name !== 'InvalidStateError') {
+          setError((e as DOMException).message);
         }
       }
     }
-  }, [isListening]);
+  }, [isListening, handleResult, handleEnd, handleError]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
       recognitionRef.current.stop();
-      setIsListening(false);
+      // onend will handle the state change
     }
   }, [isListening]);
 
@@ -116,6 +111,6 @@ export const useSpeechRecognition = ({ onTranscriptFinal }: UseSpeechRecognition
     startListening,
     stopListening,
     hasRecognitionSupport: !!recognitionRef.current,
-    error
+    error,
   };
 };
