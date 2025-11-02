@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { toast } from "@/hooks/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { addItem } from "@/lib/actions"
 import type { InventoryItem } from "@/lib/types"
 
@@ -34,6 +34,7 @@ type AddItemFormProps = {
 }
 
 export function AddItemForm({ onSuccess }: AddItemFormProps) {
+  const { toast } = useToast()
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
