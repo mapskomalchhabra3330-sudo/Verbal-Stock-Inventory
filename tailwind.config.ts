@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['"PT Sans"', 'sans-serif'],
+        headline: ['"PT Sans"', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {
@@ -40,6 +40,10 @@ export default {
         accent: {
           DEFAULT: 'hsl(var(--accent))',
           foreground: 'hsl(var(--accent-foreground))',
+        },
+        'custom-accent': {
+          DEFAULT: 'hsl(140, 9%, 72%)',
+          foreground: 'hsl(140, 5%, 20%)',
         },
         destructive: {
           DEFAULT: 'hsl(var(--destructive))',

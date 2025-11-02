@@ -1,0 +1,78 @@
+"use client"
+
+import { useState } from "react"
+import { usePathname } from "next/navigation"
+import { Mic, CircleUser, Settings, LogOut } from "lucide-react"
+
+import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { VoiceCommandDialog } from "./voice-command-dialog"
+
+function getTitleFromPathname(pathname: string): string {
+  if (pathname.includes("/inventory")) return "Inventory"
+  if (pathname.includes("/dashboard")) return "Dashboard"
+  return "VerbalStock"
+}
+
+export function DashboardHeader() {
+  const { isMobile } = useSidebar()
+  const pathname = usePathname()
+  const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false)
+
+  return (
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+      {isMobile && <SidebarTrigger />}
+      <div className="relative flex-1">
+        <h1 className="text-lg font-semibold md:text-2xl">
+          {getTitleFromPathname(pathname)}
+        </h1>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          className="rounded-full"
+          onClick={() => setIsVoiceDialogOpen(true)}
+        >
+          <Mic className="size-5" />
+          <span className="sr-only">Use Voice Command</span>
+        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
+              <Avatar className="size-9">
+                <AvatarImage src="https://picsum.photos/seed/user/100/100" alt="User" />
+                <AvatarFallback>
+                  <CircleUser />
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <Settings className="mr-2 size-4" />
+              <span>Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem>
+              <LogOut className="mr-2 size-4" />
+              <span>Logout</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <VoiceCommandDialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen} />
+    </header>
+  )
+}

@@ -1,3 +1,58 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "milk",
+      "description": "Carton of milk",
+      "imageUrl": "https://images.unsplash.com/photo-1641320487573-479720290849?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtaWxrJTIwY2FydG9ufGVufDB8fHx8MTc2MjA1MDkyN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "milk carton"
+    },
+    {
+      "id": "bread",
+      "description": "Loaf of bread",
+      "imageUrl": "https://images.unsplash.com/photo-1598373182308-3270495d2f58?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxicmVhZCUyMGxvYWZ8ZW58MHx8fHwxNzYyMDI2MzIxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "bread loaf"
+    },
+    {
+      "id": "eggs",
+      "description": "Carton of eggs",
+      "imageUrl": "https://images.unsplash.com/photo-1586554102388-c03845e22442?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxlZ2dzJTIwY2FydG9ufGVufDB8fHx8MTc2MjA4MTcwNHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "eggs carton"
+    },
+    {
+      "id": "apples",
+      "description": "A bushel of apples",
+      "imageUrl": "https://images.unsplash.com/photo-1601236007883-e8c3079bebe0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxyZWQlMjBhcHBsZXN8ZW58MHx8fHwxNzYyMDQyMDgzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "red apples"
+    },
+    {
+      "id": "cereal",
+      "description": "A box of cereal",
+      "imageUrl": "https://images.unsplash.com/photo-1741521641159-41f82f656f75?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjZXJlYWwlMjBib3h8ZW58MHx8fHwxNzYyMDUwOTI3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cereal box"
+    },
+    {
+      "id": "soda",
+      "description": "A can of soda",
+      "imageUrl": "https://images.unsplash.com/photo-1630404365865-97ff92feba6a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxzb2RhJTIwY2FufGVufDB8fHx8MTc2MjA3MDcxN3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "soda can"
+    },
+    {
+      "id": "cheese",
+      "description": "A block of cheese",
+      "imageUrl": "https://images.unsplash.com/photo-1723473620176-8d26dc6314cf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxjaGVlc2UlMjBibG9ja3xlbnwwfHx8fDE3NjE5OTU2MTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "cheese block"
+    },
+    {
+      "id": "yogurt",
+      "description": "A cup of yogurt",
+      "imageUrl": "https://images.unsplash.com/photo-1719077518819-9ddbc5c6ef62?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHx5b2d1cnQlMjBjdXB8ZW58MHx8fHwxNzYxOTk1NjE1fDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "yogurt cup"
+    },
+    {
+      "id": "default",
+      "description": "Default product image",
+      "imageUrl": "https://images.unsplash.com/photo-1628794397139-a45fc3286892?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwcm9kdWN0JTIwYm94fGVufDB8fHx8MTc2MjA4ODExMHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "product box"
+    }
+  ]
 }
