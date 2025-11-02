@@ -4,10 +4,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card"
 
-import { Package, Truck, CircleDollarSign, PackageSearch } from "lucide-react"
+import { Package, Truck, Wallet, PackageSearch } from "lucide-react"
 
 import { getInventory } from "@/lib/actions"
 import type { InventoryItem } from "@/lib/types"
@@ -71,7 +70,7 @@ export default function DashboardPage() {
             <CardTitle className="text-sm font-medium">
               Total Inventory Value
             </CardTitle>
-            <CircleDollarSign className="h-4 w-4 text-muted-foreground" />
+            <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCurrency(totalValue)}</div>
