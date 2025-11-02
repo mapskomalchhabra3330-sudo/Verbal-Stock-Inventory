@@ -146,15 +146,18 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
 
   const { icon, title, description } = getStatusContent()
 
-  if (!hasRecognitionSupport) {
-      if (open) {
+  useEffect(() => {
+    if (!hasRecognitionSupport && open) {
         toast({
             variant: "destructive",
             title: "Unsupported Browser",
             description: "Speech recognition is not supported in your browser. Please try Chrome or Safari.",
         })
-        onOpenChange(false);
+        // onOpenChange(false); // This was causing the loop
       }
+  }, [hasRecognitionSupport, open, toast]);
+
+  if (!hasRecognitionSupport) {
       return null;
   }
 
