@@ -16,7 +16,6 @@ import { Button } from "@/components/ui/button"
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition"
 import { processVoiceCommand } from "@/lib/actions"
 import type { VoiceCommandResponse } from "@/lib/types"
-import { useToast } from "@/hooks/use-toast"
 
 type VoiceCommandDialogProps = {
   open: boolean
@@ -37,7 +36,6 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
     error: recognitionError,
   } = useSpeechRecognition()
   const router = useRouter()
-  const { toast } = useToast()
 
   const handleCommandProcessing = useCallback(async (command: string) => {
     if (command.trim() === "") {
@@ -68,25 +66,21 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
 
   useEffect(() => {
     if (open) {
-      setStatus("idle")
-      setResult(null)
-      startListening()
+        setStatus("listening");
+        setResult(null);
+        startListening();
     } else {
-      stopListening()
+        stopListening();
+        setStatus("idle");
     }
-  }, [open, startListening, stopListening])
+  }, [open, startListening, stopListening]);
+
 
   useEffect(() => {
     if (!isListening && transcript && status === 'listening') {
       handleCommandProcessing(transcript)
     }
   }, [isListening, transcript, handleCommandProcessing, status])
-  
-  useEffect(() => {
-    if(isListening && status === 'idle') {
-        setStatus('listening');
-    }
-  }, [isListening, status])
 
   useEffect(() => {
     if(recognitionError) {
@@ -98,13 +92,10 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
   const handleMicClick = () => {
     if (isListening) {
       stopListening()
-      if(transcript) {
-          handleCommandProcessing(transcript)
-      } else {
-          setStatus('idle');
-      }
+      // The processing will be triggered by the `isListening` change in the useEffect
     } else {
       startListening()
+      setStatus('listening');
     }
   }
   
@@ -145,16 +136,6 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
   }
 
   const { icon, title, description } = getStatusContent()
-
-  useEffect(() => {
-    if (!hasRecognitionSupport && open) {
-        toast({
-            variant: "destructive",
-            title: "Unsupported Browser",
-            description: "Speech recognition is not supported in your browser. Please try Chrome or Safari.",
-        })
-    }
-  }, [hasRecognitionSupport, open, toast, onOpenChange]);
 
   if (!hasRecognitionSupport) {
       return null;
