@@ -50,7 +50,6 @@ export const useSpeechRecognition = (): SpeechRecognitionHook => {
     recognition.onend = () => {
       if (recognitionRef.current) {
         setIsListening(false);
-        setTranscript('');
       }
     };
 
