@@ -51,9 +51,10 @@ type InventoryTableProps = {
     data: InventoryItem[]
     openAddDialog?: boolean
     newItemName?: string
+    onItemAdded: (item: InventoryItem) => void;
 }
 
-export function InventoryTable({ data, openAddDialog = false, newItemName }: InventoryTableProps) {
+export function InventoryTable({ data, openAddDialog = false, newItemName, onItemAdded }: InventoryTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -139,7 +140,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemName }: Inv
       accessorKey: "price",
       header: () => <div className="text-right">Price</div>,
       cell: ({ row }) => {
-        const amount = parseFloat(row.getValue("price"))
+        const amount = parseFloat(String(row.getValue("price")))
         return <div className="text-right font-medium">{formatCurrency(amount)}</div>
       },
     },
@@ -196,6 +197,11 @@ export function InventoryTable({ data, openAddDialog = false, newItemName }: Inv
       rowSelection,
     },
   })
+  
+  const handleSuccess = (newItem: InventoryItem) => {
+    onItemAdded(newItem);
+    setIsAddFormOpen(false)
+  }
 
   return (
     <div className="w-full">
@@ -224,7 +230,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemName }: Inv
                 </DialogHeader>
                 <div className="py-4">
                     <AddItemForm 
-                      onSuccess={() => setIsAddFormOpen(false)} 
+                      onSuccess={handleSuccess} 
                       initialData={prefilledItemName ? { name: prefilledItemName } : undefined}
                     />
                 </div>

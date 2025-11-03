@@ -1,21 +1,16 @@
 'use client'
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { getInventory } from "@/lib/actions"
-import { InventoryTable } from "@/components/dashboard/inventory-table"
-import type { InventoryItem, VoiceCommandResponse } from "@/lib/types"
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import type { InventoryItem } from "@/lib/types"
+import { InventoryClient } from "@/components/dashboard/inventory-client"
 
 
 export default function InventoryPage() {
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     
-    const searchParams = useSearchParams()
-    const openAddDialog = searchParams.get('openAddDialog') === 'true';
-    const newItemName = searchParams.get('itemName') || undefined;
-
-    useState(() => {
+    useEffect(() => {
         const fetchInventory = async () => {
             setLoading(true);
             const data = await getInventory();
@@ -23,19 +18,17 @@ export default function InventoryPage() {
             setLoading(false);
         };
         fetchInventory();
-    });
+    }, []);
 
     if (loading) {
-        return <div>Loading...</div>
+        return <div className="container mx-auto py-10">Loading...</div>
     }
 
+    const handleItemAdded = (newItem: InventoryItem) => {
+        setInventory(prevInventory => [newItem, ...prevInventory]);
+    };
+
     return (
-        <div className="container mx-auto py-10">
-            <InventoryTable 
-                data={inventory} 
-                openAddDialog={openAddDialog} 
-                newItemName={newItemName}
-            />
-        </div>
+        <InventoryClient initialData={inventory} onItemAdded={handleItemAdded} />
     )
 }
