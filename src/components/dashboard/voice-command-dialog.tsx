@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
@@ -28,6 +29,7 @@ type Status = "idle" | "listening" | "processing" | "success" | "error"
 export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceCommandDialogProps) {
   const [status, setStatus] = useState<Status>("idle")
   const [result, setResult] = useState<VoiceCommandResponse | null>(null)
+  const [lastTranscript, setLastTranscript] = useState("")
   const router = useRouter()
   
   const handleProcessCommand = useCallback(async (command: string) => {
@@ -35,7 +37,7 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
         setStatus("idle")
         return
     }
-    setStatus("processing")
+    // Status is already set to 'processing' by the time this is called.
     try {
       const res = await processVoiceCommand(command)
       setResult(res)
@@ -50,11 +52,19 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
       }
       
     } catch (e) {
+      console.error(e);
       const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
       setResult({ success: false, message: errorMessage })
       setStatus("error")
     }
   }, [router, onAction]);
+
+  const onFinal = (transcript: string) => {
+    stopListening();
+    setLastTranscript(transcript);
+    setStatus("processing");
+    handleProcessCommand(transcript);
+  }
 
   const {
     isListening,
@@ -63,13 +73,14 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
     stopListening,
     hasRecognitionSupport,
     error: recognitionError,
-  } = useSpeechRecognition({ onTranscriptFinal: handleProcessCommand });
+  } = useSpeechRecognition({ onTranscriptFinal: onFinal });
 
 
   useEffect(() => {
     if (open) {
-      setStatus("listening")
       setResult(null)
+      setLastTranscript("");
+      setStatus("listening")
       startListening()
     } else {
       stopListening()
@@ -87,13 +98,16 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
   const handleMicClick = () => {
     if (isListening) {
       stopListening()
+      // The onEnd callback from the hook will set the status if needed.
     } else {
       setStatus('listening');
+      setLastTranscript("");
       startListening()
     }
   }
   
   const getStatusContent = () => {
+    const currentTranscript = transcript || lastTranscript;
     switch (status) {
       case "listening":
         return {
@@ -105,7 +119,7 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
         return {
           icon: <BrainCircuit className="size-12 text-primary animate-spin" />,
           title: "Processing...",
-          description: `Analyzing your command: "${transcript}"`,
+          description: `Analyzing your command: "${currentTranscript}"`,
         }
       case "success":
         return {
@@ -158,6 +172,7 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
             className="size-16 rounded-full"
             onClick={handleMicClick}
             variant={isListening ? "destructive" : "default"}
+            disabled={status === "processing"}
           >
             {isListening ? (
               <MicOff className="size-8" />
