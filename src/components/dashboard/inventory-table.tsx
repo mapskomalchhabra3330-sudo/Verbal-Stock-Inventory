@@ -61,7 +61,6 @@ import { formatCurrency } from "@/lib/utils"
 import type { InventoryItem } from "@/lib/types"
 import { AddItemForm } from "./add-item-form"
 import { deleteItem } from "@/lib/actions"
-import { useToast } from "@/hooks/use-toast"
 
 type InventoryTableProps = {
     data: InventoryItem[]
@@ -86,7 +85,6 @@ export function InventoryTable({
   itemToView,
   itemToDelete
 }: InventoryTableProps) {
-  const { toast } = useToast()
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -104,24 +102,36 @@ export function InventoryTable({
 
   React.useEffect(() => {
     if (openAddDialog) {
+      setEditingItem(null);
+      setViewingItem(null);
+      setDeletingItem(null);
       setIsAddFormOpen(true);
     }
   }, [openAddDialog]);
 
   React.useEffect(() => {
     if (itemToEdit) {
+      setIsAddFormOpen(false);
+      setViewingItem(null);
+      setDeletingItem(null);
       setEditingItem(itemToEdit);
     }
   }, [itemToEdit]);
   
   React.useEffect(() => {
     if (itemToView) {
+      setIsAddFormOpen(false);
+      setEditingItem(null);
+      setDeletingItem(null);
       setViewingItem(itemToView);
     }
   }, [itemToView]);
 
   React.useEffect(() => {
     if (itemToDelete) {
+      setIsAddFormOpen(false);
+      setEditingItem(null);
+      setViewingItem(null);
       setDeletingItem(itemToDelete);
     }
   }, [itemToDelete]);
@@ -131,16 +141,8 @@ export function InventoryTable({
       try {
         await deleteItem(deletingItem.id);
         onItemDeleted();
-        toast({
-          title: "Item Deleted",
-          description: `Successfully deleted "${deletingItem.name}".`,
-        });
       } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to delete the item.",
-        });
+        console.error("Failed to delete item", error);
       } finally {
         setDeletingItem(null);
         clearUrlParams();

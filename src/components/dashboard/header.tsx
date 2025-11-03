@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { CircleUser, Settings, LogOut } from "lucide-react"
 
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { VoiceCommandResponse } from "@/lib/types"
-import { useToast } from "@/hooks/use-toast"
 
 function getTitleFromPathname(pathname: string): string {
   if (pathname.includes("/inventory")) return "Inventory"
@@ -28,7 +27,6 @@ export function DashboardHeader() {
   const { isMobile } = useSidebar()
   const pathname = usePathname()
   const router = useRouter()
-  const { toast } = useToast()
   
   const handleVoiceAction = useCallback((event: Event) => {
     const response = (event as CustomEvent).detail as VoiceCommandResponse;
@@ -61,9 +59,14 @@ export function DashboardHeader() {
        return;
     }
     
-    router.push(`${targetPath}?${params.toString()}`);
+    if (pathname !== targetPath) {
+      router.push(`${targetPath}?${params.toString()}`);
+    } else {
+      // If we are already on the page, just update the params
+      router.replace(`${targetPath}?${params.toString()}`, { scroll: false });
+    }
 
-  }, [router]);
+  }, [router, pathname]);
 
   useEffect(() => {
     window.addEventListener('voiceaction', handleVoiceAction);

@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
 import { addItem, updateItem } from "@/lib/actions"
 import type { InventoryItem } from "@/lib/types"
 
@@ -38,7 +37,6 @@ type AddItemFormProps = {
 }
 
 export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddItemFormProps) {
-  const { toast } = useToast()
   const form = useForm<AddItemFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -70,27 +68,16 @@ export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddIt
     try {
       if (isEditing) {
         if (!initialData?.id) throw new Error("Item ID is missing for editing.");
-        const updatedItem = await updateItem(initialData.id, values);
-         toast({
-          title: "Item Updated",
-          description: `Successfully updated "${updatedItem.name}".`,
-        });
+        await updateItem(initialData.id, values);
         onSuccess();
       } else {
-        const newItem = await addItem(values);
-        toast({
-          title: "Item Added",
-          description: `Successfully added "${newItem.name}" to your inventory.`,
-        });
+        await addItem(values);
         form.reset();
         onSuccess();
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: `Failed to ${isEditing ? 'update' : 'add'} the item. Please try again.`,
-      })
+      console.error(`Failed to ${isEditing ? 'update' : 'add'} item`, error);
+      // Optionally handle the error state in the form
     }
   }
 

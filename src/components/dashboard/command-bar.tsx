@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea'
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition'
 import { processVoiceCommand } from '@/lib/actions'
 import type { VoiceCommandResponse } from '@/lib/types'
-import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '../ui/scroll-area'
 import { cn } from '@/lib/utils'
 
@@ -20,7 +19,6 @@ type Message = {
 }
 
 export function CommandBar() {
-  const { toast } = useToast()
   const [inputValue, setInputValue] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [isExpanded, setIsExpanded] = useState(false)
@@ -32,16 +30,11 @@ export function CommandBar() {
     setMessages(prev => prev.map(m => m.isProcessing ? { ...m, isProcessing: false, text: message } : m));
 
     if (success) {
-      if (action) {
-        toast({ title: "Success", description: message });
-      }
       if (action?.startsWith('REFRESH')) {
         window.dispatchEvent(new Event('datachange'));
       }
-    } else {
-        toast({ variant: "destructive", title: "Error", description: message });
     }
-  }, [toast]);
+  }, []);
   
   const processCommand = useCallback(async (command: string) => {
     if (!command.trim()) return
@@ -66,9 +59,8 @@ export function CommandBar() {
       console.error(e)
       const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.'
       setMessages(prev => prev.map(m => m.id === botMessageId ? { ...m, text: errorMessage, isProcessing: false } : m))
-      toast({ variant: "destructive", title: "Error", description: errorMessage });
     }
-  }, [handleAction, toast])
+  }, [handleAction])
   
   const onFinal = useCallback((transcript: string) => {
     stopListening()
