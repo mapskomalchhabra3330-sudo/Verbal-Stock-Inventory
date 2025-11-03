@@ -15,6 +15,10 @@ export type InventoryItem = {
 // Types for process-command-flow.ts
 export const ProcessCommandInputSchema = z.object({
   command: z.string().describe('The voice command spoken by the user.'),
+  inventory: z.array(z.object({
+    name: z.string(),
+    stock: z.number(),
+  })).optional().describe('The current list of inventory items and their stock counts.')
 });
 export type ProcessCommandInput = z.infer<typeof ProcessCommandInputSchema>;
 

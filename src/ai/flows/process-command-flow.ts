@@ -19,6 +19,13 @@ const prompt = ai.definePrompt({
   output: { schema: ProcessCommandOutputSchema },
   prompt: `You are an expert inventory management AI. Your task is to interpret a voice command and convert it into a structured action.
 
+  You have access to the current inventory state. Use it to resolve ambiguities. For example, if the user says "remove all cola", you should find the item "Classic Cola" and set the quantity to its current stock.
+
+  Current Inventory:
+  {{#each inventory}}
+  - {{this.name}}: {{this.stock}} in stock
+  {{/each}}
+
   Analyze the user's command: "{{command}}"
 
   Determine the user's intent and extract the necessary entities.
@@ -35,6 +42,7 @@ const prompt = ai.definePrompt({
   If a command is to "remove", "sell", or "take" something, it's REMOVE_STOCK.
   If a command is asking "how many", "quantity of", or to "check stock", it's CHECK_STOCK.
   If the command is to "add a new item" or "create a new product", it is ADD_NEW_ITEM.
+  If the user says "all" or "everything" for a quantity, use the current stock number for that item.
 
   If you cannot determine the action or required parameters, use the UNKNOWN_COMMAND action with an explanatory message.
 

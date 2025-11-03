@@ -47,7 +47,11 @@ export async function updateStock(itemName: string, quantityChange: number): Pro
 
 export async function processVoiceCommand(command: string): Promise<VoiceCommandResponse> {
   try {
-    const result = await processCommand({ command });
+    const currentInventory = await getInventory();
+    const result = await processCommand({ 
+        command,
+        inventory: currentInventory.map(item => ({ name: item.name, stock: item.stock }))
+    });
 
     switch (result.action) {
       case 'ADD_STOCK': {
