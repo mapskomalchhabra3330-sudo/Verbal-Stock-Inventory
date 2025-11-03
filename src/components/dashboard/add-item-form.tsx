@@ -137,7 +137,7 @@ export function AddItemForm({ onSuccess, initialData }: AddItemFormProps) {
                       <FormItem>
                       <FormLabel>Stock Quantity</FormLabel>
                       <FormControl>
-                          <Input type="number" {...field} />
+                          <Input type="number" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                       </FormItem>
@@ -150,7 +150,7 @@ export function AddItemForm({ onSuccess, initialData }: AddItemFormProps) {
                       <FormItem>
                       <FormLabel>Price (INR)</FormLabel>
                       <FormControl>
-                          <Input type="number" step="0.01" {...field} />
+                          <Input type="number" step="0.01" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                       </FormItem>
@@ -164,7 +164,7 @@ export function AddItemForm({ onSuccess, initialData }: AddItemFormProps) {
                     <FormItem>
                       <FormLabel>Reorder Level</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" {...field} value={field.value || ''} />
                       </FormControl>
                       <FormDescription>Alert when stock hits this level.</FormDescription>
                       <FormMessage />

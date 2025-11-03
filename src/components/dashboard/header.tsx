@@ -38,11 +38,14 @@ export function DashboardHeader() {
   const handleVoiceAction = useCallback((action: VoiceCommandResponse['action'], data: any) => {
     if (action === 'OPEN_ADD_ITEM_DIALOG') {
       setIsVoiceDialogOpen(false);
-      let url = '/dashboard/inventory?openAddDialog=true';
-      if (data?.itemName) {
-        url += `&itemName=${encodeURIComponent(data.itemName)}`;
-      }
-      router.push(url);
+      const params = new URLSearchParams();
+      params.set('openAddDialog', 'true');
+      if (data?.itemName) params.set('itemName', data.itemName);
+      if (data?.quantity !== undefined) params.set('quantity', data.quantity);
+      if (data?.price !== undefined) params.set('price', data.price);
+      if (data?.reorderLevel !== undefined) params.set('reorderLevel', data.reorderLevel);
+      
+      router.push(`/dashboard/inventory?${params.toString()}`);
     }
   }, [router]);
 

@@ -49,6 +49,9 @@ export const ProcessCommandOutputSchema = z.discriminatedUnion('action', [
   z.object({
     action: z.enum(['ADD_NEW_ITEM']),
     itemName: z.string().optional().describe('The name of the new item to add.'),
+    quantity: z.number().optional().describe('The initial stock quantity of the new item.'),
+    price: z.number().optional().describe('The price of the new item.'),
+    reorderLevel: z.number().optional().describe('The reorder level for the new item.'),
   }),
   z.object({
     action: z.enum(['UNKNOWN_COMMAND']),

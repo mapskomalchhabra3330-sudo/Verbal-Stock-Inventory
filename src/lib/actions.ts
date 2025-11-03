@@ -97,15 +97,18 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       }
 
       case 'ADD_NEW_ITEM': {
-        const { itemName } = result;
-        if (!itemName) {
-            return { success: true, message: 'Opening form to add a new item.', action: 'OPEN_ADD_ITEM_DIALOG' };
-        }
+        const { itemName, quantity, price, reorderLevel } = result;
+        const data: any = {};
+        if (itemName) data.itemName = itemName;
+        if (quantity !== undefined) data.quantity = quantity;
+        if (price !== undefined) data.price = price;
+        if (reorderLevel !== undefined) data.reorderLevel = reorderLevel;
+
         return { 
             success: true, 
-            message: `Opening form to add "${itemName}".`, 
+            message: `Opening form to add "${itemName || 'a new item'}".`, 
             action: 'OPEN_ADD_ITEM_DIALOG',
-            data: { itemName }
+            data: data
         };
       }
       

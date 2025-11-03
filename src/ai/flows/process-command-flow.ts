@@ -4,19 +4,25 @@
  *
  * - processCommand - A function that handles the command processing.
  */
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+import {
+  ProcessCommandInputSchema,
+  ProcessCommandOutputSchema,
+  type ProcessCommandInput,
+  type ProcessCommandOutput,
+} from '@/lib/types';
 
-import { ai } from '@/ai/genkit';
-import { ProcessCommandInputSchema, ProcessCommandOutputSchema, type ProcessCommandInput, type ProcessCommandOutput } from '@/lib/types';
-
-
-export async function processCommand(input: ProcessCommandInput): Promise<ProcessCommandOutput> {
+export async function processCommand(
+  input: ProcessCommandInput
+): Promise<ProcessCommandOutput> {
   return processCommandFlow(input);
 }
 
 const prompt = ai.definePrompt({
   name: 'processCommandPrompt',
-  input: { schema: ProcessCommandInputSchema },
-  output: { schema: ProcessCommandOutputSchema },
+  input: {schema: ProcessCommandInputSchema},
+  output: {schema: ProcessCommandOutputSchema},
   prompt: `You are an expert inventory management AI. Your task is to interpret a voice command and convert it into a structured action.
 
   You have access to the current inventory state. Use it to resolve ambiguities. For example, if the user says "remove all cola", you should find the item "Classic Cola" and set the quantity to its current stock.
@@ -35,7 +41,7 @@ const prompt = ai.definePrompt({
   - CHECK_STOCK: For checking the current stock of an item. Requires itemName.
   - SET_REORDER_ALERT: For setting a low-stock notification threshold. Requires itemName and threshold.
   - GENERATE_SALES_REPORT: For creating a report.
-  - ADD_NEW_ITEM: For when the user wants to add a completely new product.
+  - ADD_NEW_ITEM: For when the user wants to add a completely new product. It can optionally include quantity, price, and reorderLevel.
   - UNKNOWN_COMMAND: If the command is unclear, ambiguous, or not related to inventory management.
 
   If a command is to "add" or "put" something, it's ADD_STOCK.
@@ -43,6 +49,8 @@ const prompt = ai.definePrompt({
   If a command is asking "how many", "quantity of", or to "check stock", it's CHECK_STOCK.
   If the command is to "add a new item" or "create a new product", it is ADD_NEW_ITEM.
   If the user says "all" or "everything" for a quantity, use the current stock number for that item.
+
+  When adding a new item, extract the item name and optionally the initial stock (quantity), price, and reorder level if mentioned.
 
   If you cannot determine the action or required parameters, use the UNKNOWN_COMMAND action with an explanatory message.
 
@@ -55,8 +63,8 @@ const processCommandFlow = ai.defineFlow(
     inputSchema: ProcessCommandInputSchema,
     outputSchema: ProcessCommandOutputSchema,
   },
-  async (input) => {
-    const { output } = await prompt(input);
+  async input => {
+    const {output} = await prompt(input);
     return output!;
   }
 );

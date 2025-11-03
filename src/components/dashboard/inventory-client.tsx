@@ -14,7 +14,13 @@ export function InventoryClient({ initialData, onItemAdded }: InventoryClientPro
     const [inventory, setInventory] = useState<InventoryItem[]>(initialData);
     const searchParams = useSearchParams()
     const openAddDialog = searchParams.get('openAddDialog') === 'true';
-    const newItemName = searchParams.get('itemName') || undefined;
+    
+    const newItemData: Partial<InventoryItem> = {};
+    if (searchParams.has('itemName')) newItemData.name = searchParams.get('itemName')!;
+    if (searchParams.has('quantity')) newItemData.stock = Number(searchParams.get('quantity'));
+    if (searchParams.has('price')) newItemData.price = Number(searchParams.get('price'));
+    if (searchParams.has('reorderLevel')) newItemData.reorderLevel = Number(searchParams.get('reorderLevel'));
+
 
     const handleItemAdded = (newItem: InventoryItem) => {
         setInventory(prev => [newItem, ...prev]);
@@ -26,7 +32,7 @@ export function InventoryClient({ initialData, onItemAdded }: InventoryClientPro
             <InventoryTable 
                 data={inventory} 
                 openAddDialog={openAddDialog} 
-                newItemName={newItemName}
+                newItemData={newItemData}
                 onItemAdded={handleItemAdded}
             />
         </div>

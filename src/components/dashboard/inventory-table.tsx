@@ -50,24 +50,24 @@ import { AddItemForm } from "./add-item-form"
 type InventoryTableProps = {
     data: InventoryItem[]
     openAddDialog?: boolean
-    newItemName?: string
+    newItemData?: Partial<InventoryItem>
     onItemAdded: (item: InventoryItem) => void;
 }
 
-export function InventoryTable({ data, openAddDialog = false, newItemName, onItemAdded }: InventoryTableProps) {
+export function InventoryTable({ data, openAddDialog = false, newItemData, onItemAdded }: InventoryTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [isAddFormOpen, setIsAddFormOpen] = React.useState(openAddDialog)
-  const [prefilledItemName, setPrefilledItemName] = React.useState(newItemName);
+  const [prefilledData, setPrefilledData] = React.useState(newItemData);
 
   React.useEffect(() => {
     if (openAddDialog) {
       setIsAddFormOpen(true);
-      setPrefilledItemName(newItemName);
+      setPrefilledData(newItemData);
     }
-  }, [openAddDialog, newItemName]);
+  }, [openAddDialog, newItemData]);
 
   const columns: ColumnDef<InventoryItem>[] = React.useMemo(() => [
     {
@@ -231,7 +231,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemName, onIte
                 <div className="py-4">
                     <AddItemForm 
                       onSuccess={handleSuccess} 
-                      initialData={prefilledItemName ? { name: prefilledItemName } : undefined}
+                      initialData={prefilledData}
                     />
                 </div>
             </DialogContent>
