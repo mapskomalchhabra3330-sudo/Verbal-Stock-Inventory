@@ -37,6 +37,14 @@ export function DashboardHeader() {
 
   const handleVoiceAction = useCallback((action: VoiceCommandResponse['action'], data: any) => {
     setIsVoiceDialogOpen(false);
+    
+    // Actions that modify data and require a refresh
+    if (['REFRESH_INVENTORY', 'REFRESH_DASHBOARD'].includes(action || '')) {
+      router.refresh();
+      return;
+    }
+
+    // Actions that open dialogs via URL params
     const params = new URLSearchParams();
     let targetPath = '/dashboard/inventory';
 
@@ -61,11 +69,9 @@ export function DashboardHeader() {
         params.set('deleteItem', data.itemName);
         break;
       default:
-        // For refresh actions, we just need to re-navigate.
-        if(pathname !== '/dashboard/inventory') {
-            targetPath = pathname;
-        }
-        break;
+        // For other actions or no action, we might not need to navigate.
+        // If navigation is needed, it can be handled here.
+        return;
     }
     
     router.push(`${targetPath}?${params.toString()}`);
