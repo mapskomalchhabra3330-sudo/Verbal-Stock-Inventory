@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, PlusCircle } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useUser } from "@/firebase"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -86,6 +87,7 @@ export function InventoryTable({
   itemToDelete
 }: InventoryTableProps) {
   const router = useRouter();
+  const { user } = useUser();
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -137,9 +139,9 @@ export function InventoryTable({
   }, [itemToDelete]);
 
   const confirmDelete = async () => {
-    if (deletingItem) {
+    if (deletingItem && user) {
       try {
-        await deleteItem(deletingItem.id);
+        await deleteItem(user.uid, deletingItem.id);
         onItemDeleted();
       } catch (error) {
         console.error("Failed to delete item", error);
@@ -308,7 +310,7 @@ export function InventoryTable({
           if (!isOpen) clearUrlParams();
         }}>
             <DialogTrigger asChild>
-                 <Button className="ml-auto" onClick={() => setIsAddFormOpen(true)}>
+                 <Button className="ml-auto" onClick={() => setIsAddFormOpen(true)} disabled={!user}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Product
                 </Button>

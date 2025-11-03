@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { useEffect } from "react"
+import { useUser } from "@/firebase"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +38,7 @@ type AddItemFormProps = {
 }
 
 export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddItemFormProps) {
+  const { user } = useUser();
   const form = useForm<AddItemFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -65,19 +67,22 @@ export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddIt
   }, [initialData, form]);
 
   async function onSubmit(values: AddItemFormValues) {
+    if (!user) {
+      console.error("No user logged in");
+      return;
+    }
     try {
       if (isEditing) {
         if (!initialData?.id) throw new Error("Item ID is missing for editing.");
-        await updateItem(initialData.id, values);
+        await updateItem(user.uid, initialData.id, values);
         onSuccess();
       } else {
-        await addItem(values);
+        await addItem(user.uid, values);
         form.reset();
         onSuccess();
       }
     } catch (error) {
       console.error(`Failed to ${isEditing ? 'update' : 'add'} item`, error);
-      // Optionally handle the error state in the form
     }
   }
 
@@ -173,7 +178,7 @@ export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddIt
         </div>
         
         <div className="flex justify-end">
-             <Button type="submit" disabled={form.formState.isSubmitting}>
+             <Button type="submit" disabled={form.formState.isSubmitting || !user}>
               {form.formState.isSubmitting
                 ? isEditing ? "Saving..." : "Adding..."
                 : isEditing ? "Save Changes" : "Add Product"}

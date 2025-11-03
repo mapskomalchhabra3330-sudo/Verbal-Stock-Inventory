@@ -2,71 +2,91 @@
 
 import { revalidatePath } from 'next/cache'
 import { processCommand } from '@/ai/flows/process-command-flow'
-import { inventory } from './data'
+import { inventory as mockInventoryData } from './data'
 import type { InventoryItem, VoiceCommandResponse } from './types'
+import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where, getDoc, writeBatch } from 'firebase/firestore'
+import { initializeFirebase } from '@/firebase/server-init'
 
-// This is a hack for the demo to simulate a database.
 // In a real application, you would use a proper database like Firestore.
-let mockInventory: InventoryItem[] = [...inventory];
+let mockInventory: InventoryItem[] = [...mockInventoryData];
 
-export async function getInventory(): Promise<InventoryItem[]> {
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network latency
-    return JSON.parse(JSON.stringify(mockInventory));
+async function getDb(userId: string) {
+    const { firestore } = initializeFirebase();
+    const inventoryCollection = collection(firestore, 'users', userId, 'inventoryItems');
+    return { firestore, inventoryCollection };
 }
 
-export async function getItemByName(name: string): Promise<InventoryItem | undefined> {
-    const item = mockInventory.find(i => i.name.toLowerCase() === name.toLowerCase());
-    return item ? JSON.parse(JSON.stringify(item)) : undefined;
+export async function getInventory(userId: string): Promise<InventoryItem[]> {
+    const { inventoryCollection } = await getDb(userId);
+    const snapshot = await getDocs(inventoryCollection);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
 }
 
-export async function addItem(itemData: Omit<InventoryItem, 'id' | 'lastUpdated'>): Promise<InventoryItem> {
-    const newItem: InventoryItem = {
-        id: `ITEM-${String(mockInventory.length + 1).padStart(3, '0')}`,
+export async function getItemByName(userId: string, name: string): Promise<InventoryItem | undefined> {
+    const { inventoryCollection } = await getDb(userId);
+    const q = query(inventoryCollection, where("name", "==", name));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return undefined;
+    }
+    const docData = snapshot.docs[0];
+    return { id: docData.id, ...docData.data() } as InventoryItem;
+}
+
+export async function addItem(userId: string, itemData: Omit<InventoryItem, 'id' | 'lastUpdated'>): Promise<InventoryItem> {
+    const { inventoryCollection } = await getDb(userId);
+    const newItemData = {
         ...itemData,
         lastUpdated: new Date().toISOString(),
     };
-    mockInventory.unshift(newItem);
-    return JSON.parse(JSON.stringify(newItem));
+    const docRef = await addDoc(inventoryCollection, newItemData);
+    return { id: docRef.id, ...newItemData };
 }
 
-export async function updateItem(id: string, itemData: Partial<Omit<InventoryItem, 'id' | 'lastUpdated'>>): Promise<InventoryItem> {
-    const itemIndex = mockInventory.findIndex(i => i.id === id);
-    if (itemIndex > -1) {
-        mockInventory[itemIndex] = {
-            ...mockInventory[itemIndex],
-            ...itemData,
-            lastUpdated: new Date().toISOString(),
-        };
-        return JSON.parse(JSON.stringify(mockInventory[itemIndex]));
-    }
-    throw new Error("Item not found");
+export async function updateItem(userId: string, id: string, itemData: Partial<Omit<InventoryItem, 'id' | 'lastUpdated'>>): Promise<InventoryItem> {
+    const { firestore } = await getDb(userId);
+    const docRef = doc(firestore, 'users', userId, 'inventoryItems', id);
+    const updatedData = {
+        ...itemData,
+        lastUpdated: new Date().toISOString(),
+    };
+    await updateDoc(docRef, updatedData);
+    const updatedDoc = await getDoc(docRef);
+    return { id: updatedDoc.id, ...updatedDoc.data() } as InventoryItem;
 }
 
-export async function deleteItem(id: string): Promise<{ success: true }> {
-    const initialLength = mockInventory.length;
-    mockInventory = mockInventory.filter(item => item.id !== id);
-    if (mockInventory.length === initialLength) {
-        throw new Error("Item not found");
-    }
+export async function deleteItem(userId: string, id: string): Promise<{ success: true }> {
+    const { firestore } = await getDb(userId);
+    const docRef = doc(firestore, 'users', userId, 'inventoryItems', id);
+    await deleteDoc(docRef);
     return { success: true };
 }
 
 
-export async function updateStock(itemName: string, quantityChange: number): Promise<InventoryItem | null> {
-    const itemIndex = mockInventory.findIndex(i => i.name.toLowerCase().includes(itemName.toLowerCase()));
+export async function updateStock(userId: string, itemName: string, quantityChange: number): Promise<InventoryItem | null> {
+    const { inventoryCollection } = await getDb(userId);
+    const q = query(inventoryCollection, where("name", "==", itemName));
+    const snapshot = await getDocs(q);
 
-    if (itemIndex > -1) {
-        mockInventory[itemIndex].stock += quantityChange;
-        mockInventory[itemIndex].lastUpdated = new Date().toISOString();
+    if (!snapshot.empty) {
+        const docToUpdate = snapshot.docs[0];
+        const currentStock = docToUpdate.data().stock;
+        const newStock = currentStock + quantityChange;
         
-        return JSON.parse(JSON.stringify(mockInventory[itemIndex]));
+        await updateDoc(docToUpdate.ref, { 
+            stock: newStock,
+            lastUpdated: new Date().toISOString()
+        });
+        
+        const updatedDoc = await getDoc(docToUpdate.ref);
+        return { id: updatedDoc.id, ...updatedDoc.data() } as InventoryItem;
     }
     return null;
 }
 
-export async function processVoiceCommand(command: string): Promise<VoiceCommandResponse> {
+export async function processVoiceCommand(userId: string, command: string): Promise<VoiceCommandResponse> {
   try {
-    const currentInventory = await getInventory();
+    const currentInventory = await getInventory(userId);
     const result = await processCommand({ 
         command,
         inventory: currentInventory.map(item => ({ name: item.name, stock: item.stock }))
@@ -76,7 +96,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       case 'ADD_STOCK': {
         const { itemName, quantity } = result;
         if (!itemName || quantity === undefined) return { success: false, message: "I didn't catch the item name or quantity." };
-        const item = await updateStock(itemName, quantity);
+        const item = await updateStock(userId, itemName, quantity);
         if (item) {
           return { success: true, message: `Added ${quantity} units to ${item.name}. New stock is ${item.stock}.`, action: 'REFRESH_INVENTORY' };
         }
@@ -86,7 +106,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       case 'REMOVE_STOCK': {
         const { itemName, quantity } = result;
         if (!itemName || quantity === undefined) return { success: false, message: "I didn't catch the item name or quantity." };
-        const item = await updateStock(itemName, -quantity);
+        const item = await updateStock(userId, itemName, -quantity);
         if (item) {
           return { success: true, message: `Removed ${quantity} units from ${item.name}. New stock is ${item.stock}.`, action: 'REFRESH_INVENTORY' };
         }
@@ -96,7 +116,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       case 'CHECK_STOCK': {
         const { itemName } = result;
         if (!itemName) return { success: false, message: "I didn't catch the item name." };
-        const item = await getItemByName(itemName);
+        const item = await getItemByName(userId, itemName);
         if (item) {
           return { success: true, message: `You have ${item.stock} units of ${item.name} in stock.` };
         }
@@ -106,9 +126,9 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       case 'SET_REORDER_ALERT': {
         const { itemName, threshold } = result;
         if (!itemName || threshold === undefined) return { success: false, message: "I didn't catch the item name or threshold." };
-        const itemToUpdate = mockInventory.find(i => i.name.toLowerCase().includes(itemName.toLowerCase()));
+        const itemToUpdate = await getItemByName(userId, itemName);
         if (itemToUpdate) {
-            itemToUpdate.reorderLevel = threshold;
+            await updateItem(userId, itemToUpdate.id, { reorderLevel: threshold });
             return { success: true, message: `Reorder alert for ${itemToUpdate.name} set to ${threshold}.`, action: 'REFRESH_INVENTORY' };
         }
         return { success: false, message: `Could not find item "${itemName}".` };
@@ -134,7 +154,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
         const { itemName, ...updates } = result;
         if (!itemName) return { success: false, message: "I didn't catch which item to edit." };
 
-        const itemToUpdate = await getItemByName(itemName);
+        const itemToUpdate = await getItemByName(userId, itemName);
         if (!itemToUpdate) {
           return { success: false, message: `Could not find item "${itemName}".` };
         }
@@ -142,7 +162,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
         const hasUpdates = Object.values(updates).some(val => val !== undefined);
 
         if (hasUpdates) {
-          const updatedItem = await updateItem(itemToUpdate.id, updates);
+          const updatedItem = await updateItem(userId, itemToUpdate.id, updates);
           let updateMessages: string[] = [];
           if (updates.price !== undefined) updateMessages.push(`price to ${updatedItem.price}`);
           if (updates.stock !== undefined) updateMessages.push(`stock to ${updatedItem.stock}`);
@@ -188,7 +208,11 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       }
 
       case 'GENERATE_SALES_REPORT': {
-        const mostDemanded = mockInventory.reduce((prev, current) => (prev.price > current.price) ? prev : current);
+        const inventory = await getInventory(userId);
+        if(inventory.length === 0) {
+            return { success: true, message: `Your inventory is empty.`};
+        }
+        const mostDemanded = inventory.reduce((prev, current) => (prev.price > current.price) ? prev : current);
         return { success: true, message: `This month's most demanded product is: ${mostDemanded.name}.`, data: { mostDemandedProduct: mostDemanded.name } };
       }
 

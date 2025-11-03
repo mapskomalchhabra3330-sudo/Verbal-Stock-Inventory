@@ -5,36 +5,42 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-
 import { Package, Truck, Wallet, PackageSearch } from "lucide-react"
-
-import { getInventory } from "@/lib/actions"
-import type { InventoryItem } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useMemo, useCallback } from "react"
 import { DashboardClient } from "@/components/dashboard/dashboard-client"
+import { useAuth, useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase"
+import type { InventoryItem } from "@/lib/types"
+import { collection, query } from "firebase/firestore"
+import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login"
 
 export default function DashboardPage() {
-  const [inventory, setInventory] = useState<InventoryItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { user, isUserLoading } = useUser();
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    const data = await getInventory()
-    setInventory(data)
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    fetchData();
-    
-    const handleDataChange = () => fetchData();
-    window.addEventListener('datachange', handleDataChange);
-    return () => {
-      window.removeEventListener('datachange', handleDataChange);
+   useEffect(() => {
+    if (!user && !isUserLoading) {
+      initiateAnonymousSignIn(auth);
     }
-  }, [fetchData]);
+  }, [user, isUserLoading, auth]);
 
+  const inventoryQuery = useMemoFirebase(() => {
+    if (!user) return null;
+    return query(collection(firestore, 'users', user.uid, 'inventoryItems'))
+  }, [firestore, user]);
+
+  const { data: inventory = [], isLoading: isInventoryLoading } = useCollection<InventoryItem>(inventoryQuery);
+
+  const loading = isUserLoading || isInventoryLoading;
+
+  if (loading) {
+    return <div className="container mx-auto py-10">Loading Dashboard...</div>
+  }
+  
+  if (!user) {
+    return <div className="container mx-auto py-10">Please sign in to view your dashboard.</div>
+  }
 
   const totalSKUs = inventory.length
   const lowStockItems = inventory.filter((item) => item.stock <= item.reorderLevel)

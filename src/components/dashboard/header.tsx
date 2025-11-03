@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { VoiceCommandResponse } from "@/lib/types"
+import { useAuth, useUser } from "@/firebase"
 
 function getTitleFromPathname(pathname: string): string {
   if (pathname.includes("/inventory")) return "Inventory"
@@ -27,6 +28,8 @@ export function DashboardHeader() {
   const { isMobile } = useSidebar()
   const pathname = usePathname()
   const router = useRouter()
+  const { user } = useUser();
+  const auth = useAuth();
   
   const handleVoiceAction = useCallback((event: Event) => {
     const response = (event as CustomEvent).detail as VoiceCommandResponse;
@@ -89,7 +92,7 @@ export function DashboardHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
               <Avatar className="size-9">
-                <AvatarImage src="https://picsum.photos/seed/user/100/100" alt="User" />
+                <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/user/100/100"} alt="User" />
                 <AvatarFallback>
                   <CircleUser />
                 </AvatarFallback>
@@ -104,7 +107,7 @@ export function DashboardHeader() {
               <span>Settings</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => auth.signOut()}>
               <LogOut className="mr-2 size-4" />
               <span>Logout</span>
             </DropdownMenuItem>

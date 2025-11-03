@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Mic, Send, Bot, User, CornerDownLeft, BrainCircuit, X } from 'lucide-react'
+import { useAuth, useUser } from '@/firebase'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -25,6 +26,7 @@ export function CommandBar() {
   ])
   const [isOpen, setIsOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const { user } = useUser();
 
   const handleAction = useCallback((response: VoiceCommandResponse) => {
     const { action, data, success, message } = response;
@@ -39,7 +41,7 @@ export function CommandBar() {
   }, []);
   
   const processCommand = useCallback(async (command: string) => {
-    if (!command.trim()) return
+    if (!command.trim() || !user) return
 
     const userMessageId = `user-${Date.now()}`
     const botMessageId = `bot-${Date.now()}`
@@ -52,7 +54,7 @@ export function CommandBar() {
     setInputValue('')
     
     try {
-      const result = await processVoiceCommand(command)
+      const result = await processVoiceCommand(user.uid, command)
       handleAction(result);
       if (result.action?.startsWith('OPEN_')) {
          window.dispatchEvent(new CustomEvent('voiceaction', { detail: result }));
@@ -62,7 +64,7 @@ export function CommandBar() {
       const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.'
       setMessages(prev => prev.map(m => m.id === botMessageId ? { ...m, text: errorMessage, isProcessing: false } : m))
     }
-  }, [handleAction])
+  }, [handleAction, user])
   
   const onFinal = useCallback((transcript: string) => {
     stopListening()
@@ -165,14 +167,15 @@ export function CommandBar() {
             }}
             className="min-h-[48px] resize-none pr-20"
             readOnly={isListening}
+            disabled={!user}
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1">
             {hasRecognitionSupport && (
-              <Button type="button" size="icon" variant={isListening ? "destructive" : "ghost"} onClick={handleMicClick} disabled={!hasRecognitionSupport}>
+              <Button type="button" size="icon" variant={isListening ? "destructive" : "ghost"} onClick={handleMicClick} disabled={!hasRecognitionSupport || !user}>
                 <Mic className="size-5" />
               </Button>
             )}
-            <Button type="submit" size="icon" disabled={!inputValue.trim() || isListening}>
+            <Button type="submit" size="icon" disabled={!inputValue.trim() || isListening || !user}>
               <CornerDownLeft className="size-5" />
             </Button>
           </div>

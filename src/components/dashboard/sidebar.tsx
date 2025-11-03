@@ -16,9 +16,11 @@ import {
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/logo"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useUser } from "@/firebase"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
+  const { user } = useUser();
 
   const menuItems = [
     {
@@ -67,15 +69,15 @@ export function DashboardSidebar() {
       <SidebarFooter className="p-4">
         <div className="flex items-center gap-3">
           <Avatar className="size-9">
-            <AvatarImage src="https://picsum.photos/seed/user/100/100" alt="User" />
+            <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/user/100/100"} alt="User" />
             <AvatarFallback>
               <CircleUser />
             </AvatarFallback>
           </Avatar>
           <div className="overflow-hidden">
-            <p className="truncate text-sm font-medium">Shop Owner</p>
+            <p className="truncate text-sm font-medium">{user?.isAnonymous ? "Anonymous User" : user?.displayName || "Shop Owner"}</p>
             <p className="truncate text-xs text-sidebar-foreground/70">
-              owner@verbalstock.com
+              {user?.email || user?.uid}
             </p>
           </div>
         </div>
