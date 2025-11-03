@@ -130,7 +130,7 @@ export function InventoryTable({
     if (deletingItem) {
       try {
         await deleteItem(deletingItem.id);
-        onItemDeleted(deletingItem.id);
+        onItemDeleted(deletingItem.id); // Optimistic update
         toast({
           title: "Item Deleted",
           description: `Successfully deleted "${deletingItem.name}".`,
@@ -257,7 +257,7 @@ export function InventoryTable({
         )
       },
     },
-  ], [onItemUpdated]);
+  ], [onItemUpdated, onItemDeleted]);
 
   const table = useReactTable({
     data,
@@ -276,6 +276,9 @@ export function InventoryTable({
       columnVisibility,
       rowSelection,
     },
+    meta: {
+      onItemUpdated: onItemUpdated,
+    }
   })
   
   const handleAddSuccess = (newItem: InventoryItem) => {
@@ -285,7 +288,7 @@ export function InventoryTable({
   }
 
   const handleEditSuccess = (updatedItem: InventoryItem) => {
-    onItemUpdated(updatedItem);
+    onItemUpdated(updatedItem); // Optimistic update
     setEditingItem(null);
     clearUrlParams();
   };
@@ -403,8 +406,12 @@ export function InventoryTable({
       </div>
        {/* Edit Dialog */}
       <Dialog open={!!editingItem} onOpenChange={(isOpen) => {
-        setEditingItem(isOpen ? editingItem : null);
-        if(!isOpen) clearUrlParams();
+        if(!isOpen) {
+          setEditingItem(null);
+          clearUrlParams();
+        } else {
+          setEditingItem(editingItem);
+        }
       }}>
         <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
@@ -425,8 +432,12 @@ export function InventoryTable({
       
       {/* View Details Dialog */}
       <Dialog open={!!viewingItem} onOpenChange={(isOpen) => {
-        setViewingItem(isOpen ? viewingItem : null);
-        if(!isOpen) clearUrlParams();
+        if(!isOpen) {
+          setViewingItem(null);
+          clearUrlParams();
+        } else {
+          setViewingItem(viewingItem);
+        }
       }}>
         <DialogContent>
           <DialogHeader>
@@ -469,8 +480,12 @@ export function InventoryTable({
 
       {/* Delete Confirmation Dialog */}
        <AlertDialog open={!!deletingItem} onOpenChange={(isOpen) => {
-          setDeletingItem(isOpen ? deletingItem : null);
-          if(!isOpen) clearUrlParams();
+          if(!isOpen) {
+            setDeletingItem(null);
+            clearUrlParams();
+          } else {
+            setDeletingItem(deletingItem);
+          }
        }}>
         <AlertDialogContent>
           <AlertDialogHeader>

@@ -82,8 +82,8 @@ export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddIt
           title: "Item Added",
           description: `Successfully added "${newItem.name}" to your inventory.`,
         });
-        onSuccess(newItem);
         form.reset();
+        onSuccess(newItem);
       }
     } catch (error) {
       toast({

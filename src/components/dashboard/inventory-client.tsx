@@ -25,6 +25,10 @@ export function InventoryClient({ initialData }: InventoryClientProps) {
         setInventory(prev => prev.filter(item => item.id !== deletedItemId));
     }, []);
 
+    useEffect(() => {
+        setInventory(initialData);
+    }, [initialData]);
+
     const newItemData: Partial<InventoryItem> = {};
     if (searchParams.has('itemName')) newItemData.name = searchParams.get('itemName')!;
     if (searchParams.has('quantity')) newItemData.stock = Number(searchParams.get('quantity'));
