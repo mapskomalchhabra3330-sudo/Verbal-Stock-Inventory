@@ -7,27 +7,20 @@ import { useState, useCallback, useEffect } from 'react';
 
 type InventoryClientProps = {
     initialData: InventoryItem[];
+    onDataChange: () => void;
 }
 
-export function InventoryClient({ initialData }: InventoryClientProps) {
+export function InventoryClient({ initialData, onDataChange }: InventoryClientProps) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialData);
     const searchParams = useSearchParams()
-
-    const handleItemAdded = useCallback((newItem: InventoryItem) => {
-        setInventory(prev => [newItem, ...prev]);
-    }, []);
-
-    const handleItemUpdated = useCallback((updatedItem: InventoryItem) => {
-        setInventory(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
-    }, []);
-
-    const handleItemDeleted = useCallback((deletedItemId: string) => {
-        setInventory(prev => prev.filter(item => item.id !== deletedItemId));
-    }, []);
 
     useEffect(() => {
         setInventory(initialData);
     }, [initialData]);
+
+    const findItemByName = (name: string) => {
+        return inventory.find(item => item.name.toLowerCase() === name.toLowerCase());
+    }
 
     const newItemData: Partial<InventoryItem> = {};
     if (searchParams.has('itemName')) newItemData.name = searchParams.get('itemName')!;
@@ -35,17 +28,13 @@ export function InventoryClient({ initialData }: InventoryClientProps) {
     if (searchParams.has('price')) newItemData.price = Number(searchParams.get('price'));
     if (searchParams.has('reorderLevel')) newItemData.reorderLevel = Number(searchParams.get('reorderLevel'));
 
-    const findItemByName = (name: string) => {
-        return inventory.find(item => item.name.toLowerCase() === name.toLowerCase());
-    }
-
     return (
         <div className="container mx-auto py-10">
             <InventoryTable 
                 data={inventory} 
-                onItemAdded={handleItemAdded}
-                onItemUpdated={handleItemUpdated}
-                onItemDeleted={handleItemDeleted}
+                onItemAdded={onDataChange}
+                onItemUpdated={onDataChange}
+                onItemDeleted={onDataChange}
                 // Props for dialogs triggered by URL
                 openAddDialog={searchParams.get('openAddDialog') === 'true'}
                 newItemData={newItemData}

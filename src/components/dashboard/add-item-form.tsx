@@ -32,7 +32,7 @@ const formSchema = z.object({
 type AddItemFormValues = z.infer<typeof formSchema>
 
 type AddItemFormProps = {
-  onSuccess: (item: InventoryItem) => void;
+  onSuccess: () => void;
   initialData?: Partial<InventoryItem>;
   isEditing?: boolean;
 }
@@ -75,7 +75,7 @@ export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddIt
           title: "Item Updated",
           description: `Successfully updated "${updatedItem.name}".`,
         });
-        onSuccess(updatedItem);
+        onSuccess();
       } else {
         const newItem = await addItem(values);
         toast({
@@ -83,7 +83,7 @@ export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddIt
           description: `Successfully added "${newItem.name}" to your inventory.`,
         });
         form.reset();
-        onSuccess(newItem);
+        onSuccess();
       }
     } catch (error) {
       toast({

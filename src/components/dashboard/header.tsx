@@ -32,28 +32,37 @@ export function DashboardHeader() {
   const { toast } = useToast()
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false)
   const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false)
+  const [lastAction, setLastAction] = useState<string | null>(null);
 
   useEffect(() => {
     setHasSpeechRecognition(typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window));
   }, []);
+  
+  useEffect(() => {
+    if (lastAction) {
+        // A simple way to trigger a re-fetch on the pages that need it.
+        // In a real app, this might be a more sophisticated state management solution.
+        window.dispatchEvent(new Event('datachange'));
+        setLastAction(null);
+    }
+  }, [lastAction]);
 
   const handleVoiceAction = useCallback((response: VoiceCommandResponse) => {
     const { action, data, success, message } = response;
-    // Always close the dialog when an action is processed
     setIsVoiceDialogOpen(false);
 
-    // Show a toast for success/error messages from actions that modify data
     if (action?.startsWith('REFRESH')) {
         if (success) {
             toast({ title: "Success", description: message });
-            router.refresh();
+            // Instead of router.refresh(), we'll let the pages handle re-fetching.
+            // This avoids the "flash" of a refresh.
+            setLastAction(action);
         } else {
             toast({ variant: "destructive", title: "Error", description: message });
         }
         return;
     }
 
-    // Actions that open dialogs via URL params
     const params = new URLSearchParams();
     let targetPath = '/dashboard/inventory';
 
@@ -78,7 +87,6 @@ export function DashboardHeader() {
         params.set('deleteItem', data.itemName);
         break;
       default:
-        // For other actions (like CHECK_STOCK or UNKNOWN), show toast directly
         if(message) {
             toast({
                 title: success ? "Information" : "Error",

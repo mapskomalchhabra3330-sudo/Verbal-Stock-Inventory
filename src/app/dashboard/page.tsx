@@ -11,21 +11,28 @@ import { Package, Truck, Wallet, PackageSearch } from "lucide-react"
 import { getInventory } from "@/lib/actions"
 import type { InventoryItem } from "@/lib/types"
 import { formatCurrency } from "@/lib/utils"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { DashboardClient } from "@/components/dashboard/dashboard-client"
 
 export default function DashboardPage() {
   const [inventory, setInventory] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    async function fetchData() {
-      const data = await getInventory()
-      setInventory(data)
-      setLoading(false)
-    }
-    fetchData()
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    const data = await getInventory()
+    setInventory(data)
+    setLoading(false)
   }, [])
+
+  useEffect(() => {
+    fetchData();
+    
+    window.addEventListener('datachange', fetchData);
+    return () => {
+      window.removeEventListener('datachange', fetchData);
+    }
+  }, [fetchData]);
 
 
   const totalSKUs = inventory.length

@@ -65,9 +65,9 @@ import { useToast } from "@/hooks/use-toast"
 
 type InventoryTableProps = {
     data: InventoryItem[]
-    onItemAdded: (item: InventoryItem) => void;
-    onItemUpdated: (item: InventoryItem) => void;
-    onItemDeleted: (id: string) => void;
+    onItemAdded: () => void;
+    onItemUpdated: () => void;
+    onItemDeleted: () => void;
     openAddDialog?: boolean
     newItemData?: Partial<InventoryItem>
     itemToEdit?: InventoryItem;
@@ -130,7 +130,7 @@ export function InventoryTable({
     if (deletingItem) {
       try {
         await deleteItem(deletingItem.id);
-        onItemDeleted(deletingItem.id); // Optimistic update
+        onItemDeleted();
         toast({
           title: "Item Deleted",
           description: `Successfully deleted "${deletingItem.name}".`,
@@ -257,7 +257,7 @@ export function InventoryTable({
         )
       },
     },
-  ], [onItemUpdated, onItemDeleted]);
+  ], []);
 
   const table = useReactTable({
     data,
@@ -276,19 +276,16 @@ export function InventoryTable({
       columnVisibility,
       rowSelection,
     },
-    meta: {
-      onItemUpdated: onItemUpdated,
-    }
   })
   
-  const handleAddSuccess = (newItem: InventoryItem) => {
-    onItemAdded(newItem);
+  const handleAddSuccess = () => {
+    onItemAdded();
     setIsAddFormOpen(false)
     clearUrlParams();
   }
 
-  const handleEditSuccess = (updatedItem: InventoryItem) => {
-    onItemUpdated(updatedItem); // Optimistic update
+  const handleEditSuccess = () => {
+    onItemUpdated();
     setEditingItem(null);
     clearUrlParams();
   };
