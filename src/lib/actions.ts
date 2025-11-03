@@ -10,6 +10,7 @@ import type { InventoryItem, VoiceCommandResponse } from './types'
 let mockInventory: InventoryItem[] = [...inventory];
 
 export async function getInventory(): Promise<InventoryItem[]> {
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network latency
     return JSON.parse(JSON.stringify(mockInventory));
 }
 
@@ -25,8 +26,6 @@ export async function addItem(itemData: Omit<InventoryItem, 'id' | 'lastUpdated'
         lastUpdated: new Date().toISOString(),
     };
     mockInventory.unshift(newItem);
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/inventory');
     return JSON.parse(JSON.stringify(newItem));
 }
 
@@ -38,8 +37,6 @@ export async function updateItem(id: string, itemData: Partial<Omit<InventoryIte
             ...itemData,
             lastUpdated: new Date().toISOString(),
         };
-        revalidatePath('/dashboard');
-        revalidatePath('/dashboard/inventory');
         return JSON.parse(JSON.stringify(mockInventory[itemIndex]));
     }
     throw new Error("Item not found");
@@ -51,8 +48,6 @@ export async function deleteItem(id: string): Promise<{ success: true }> {
     if (mockInventory.length === initialLength) {
         throw new Error("Item not found");
     }
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/inventory');
     return { success: true };
 }
 
@@ -64,8 +59,6 @@ export async function updateStock(itemName: string, quantityChange: number): Pro
         mockInventory[itemIndex].stock += quantityChange;
         mockInventory[itemIndex].lastUpdated = new Date().toISOString();
         
-        revalidatePath('/dashboard');
-        revalidatePath('/dashboard/inventory');
         return JSON.parse(JSON.stringify(mockInventory[itemIndex]));
     }
     return null;
@@ -116,7 +109,6 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
         const itemToUpdate = mockInventory.find(i => i.name.toLowerCase().includes(itemName.toLowerCase()));
         if (itemToUpdate) {
             itemToUpdate.reorderLevel = threshold;
-            revalidatePath('/dashboard/inventory');
             return { success: true, message: `Reorder alert for ${itemToUpdate.name} set to ${threshold}.`, action: 'REFRESH_INVENTORY' };
         }
         return { success: false, message: `Could not find item "${itemName}".` };
@@ -132,7 +124,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
 
         return { 
             success: true, 
-            message: `Opening form to add "${itemName || 'a new item'}".`, 
+            message: `I'll open a form to add "${itemName || 'a new item'}".`, 
             action: 'OPEN_ADD_ITEM_DIALOG',
             data: data
         };
@@ -167,7 +159,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
 
         return { 
             success: true, 
-            message: `Opening dialog to edit ${itemName}.`, 
+            message: `Sure, I can help with that. Opening the edit form for ${itemName}.`, 
             action: 'OPEN_EDIT_DIALOG',
             data: { itemName }
         };
@@ -178,7 +170,7 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
         if (!itemName) return { success: false, message: "I didn't catch which item to view." };
         return { 
             success: true, 
-            message: `Opening details for ${itemName}.`, 
+            message: `Here are the details for ${itemName}.`, 
             action: 'OPEN_VIEW_DIALOG',
             data: { itemName }
         };
@@ -189,15 +181,13 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
         if (!itemName) return { success: false, message: "I didn't catch which item to delete." };
         return { 
             success: true, 
-            message: `Opening confirmation to delete ${itemName}.`, 
+            message: `Are you sure you want to delete ${itemName}?`, 
             action: 'OPEN_DELETE_DIALOG',
             data: { itemName }
         };
       }
 
       case 'GENERATE_SALES_REPORT': {
-         // In a real app, the LLM could determine the most demanded product from data.
-         // For now, we'll return a mock response.
         const mostDemanded = mockInventory.reduce((prev, current) => (prev.price > current.price) ? prev : current);
         return { success: true, message: `This month's most demanded product is: ${mostDemanded.name}.`, data: { mostDemandedProduct: mostDemanded.name } };
       }

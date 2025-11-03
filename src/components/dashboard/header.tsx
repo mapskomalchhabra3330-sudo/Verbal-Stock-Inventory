@@ -30,19 +30,10 @@ export function DashboardHeader() {
   const router = useRouter()
   const { toast } = useToast()
   
-  const handleVoiceAction = useCallback((response: VoiceCommandResponse) => {
-    const { action, data, success, message } = response;
-
-    if (success) {
-      toast({ title: "Success", description: message });
-      if (action?.startsWith('REFRESH')) {
-        window.dispatchEvent(new Event('datachange'));
-      }
-    } else {
-        toast({ variant: "destructive", title: "Error", description: message });
-        return;
-    }
-
+  const handleVoiceAction = useCallback((event: Event) => {
+    const response = (event as CustomEvent).detail as VoiceCommandResponse;
+    const { action, data } = response;
+    
     const params = new URLSearchParams();
     let targetPath = '/dashboard/inventory';
 
@@ -66,26 +57,20 @@ export function DashboardHeader() {
         if (!data?.itemName) return;
         params.set('deleteItem', data.itemName);
         break;
-      case 'REFRESH_INVENTORY':
-      case 'REFRESH_DASHBOARD':
-        // The event dispatch handles the refresh, no need to navigate.
-        window.dispatchEvent(new Event('datachange'));
-        return;
       default:
-        // Handle other cases or do nothing
-        if(message && !success) {
-            toast({
-                title: "Information",
-                description: message,
-                variant: "default"
-            });
-        }
-        return;
+       return;
     }
     
     router.push(`${targetPath}?${params.toString()}`);
 
-  }, [router, toast]);
+  }, [router]);
+
+  useEffect(() => {
+    window.addEventListener('voiceaction', handleVoiceAction);
+    return () => {
+      window.removeEventListener('voiceaction', handleVoiceAction);
+    }
+  }, [handleVoiceAction]);
 
 
   return (

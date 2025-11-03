@@ -19,8 +19,8 @@ export default function DashboardLayout({
         <main className="flex-1 overflow-auto p-4 sm:px-6 sm:py-0">
           {children}
         </main>
-        <CommandBar />
       </SidebarInset>
+      <CommandBar />
     </SidebarProvider>
   )
 }
