@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Mic, BrainCircuit, CheckCircle, XCircle, MicOff } from "lucide-react"
-import { useRouter } from "next/navigation"
 
 import {
   Dialog,
@@ -21,48 +20,43 @@ import type { VoiceCommandResponse } from "@/lib/types"
 type VoiceCommandDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onAction?: (action: VoiceCommandResponse['action'], data: any) => void
+  onAction?: (response: VoiceCommandResponse) => void
 }
 
 type Status = "idle" | "listening" | "processing" | "success" | "error"
 
 export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceCommandDialogProps) {
   const [status, setStatus] = useState<Status>("idle")
-  const [result, setResult] = useState<VoiceCommandResponse | null>(null)
   const [lastTranscript, setLastTranscript] = useState("")
-  const router = useRouter()
   
   const handleProcessCommand = useCallback(async (command: string) => {
     if (command.trim() === "") {
         setStatus("idle")
         return
     }
-    // Status is already set to 'processing' by the time this is called.
+    setStatus("processing");
     try {
       const res = await processVoiceCommand(command)
-      setResult(res)
-      setStatus(res.success ? "success" : "error")
-
-      if (res.action) {
-        onAction?.(res.action, res.data);
+      onAction?.(res);
+      // Let the onAction handler decide to close the dialog.
+      // If no onAction, we fall back to old behavior for non-mutating commands.
+      if (!onAction) {
+        setStatus(res.success ? "success" : "error")
       }
-      
-      if (res.action === 'REFRESH_DASHBOARD' || res.action === 'REFRESH_INVENTORY') {
-        router.refresh()
-      }
-      
     } catch (e) {
       console.error(e);
       const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
-      setResult({ success: false, message: errorMessage })
-      setStatus("error")
+      const errorResponse = { success: false, message: errorMessage };
+      onAction?.(errorResponse)
+      if (!onAction) {
+        setStatus("error")
+      }
     }
-  }, [router, onAction]);
+  }, [onAction]);
 
   const onFinal = (transcript: string) => {
     stopListening();
     setLastTranscript(transcript);
-    setStatus("processing");
     handleProcessCommand(transcript);
   }
 
@@ -78,7 +72,6 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
 
   useEffect(() => {
     if (open) {
-      setResult(null)
       setLastTranscript("");
       setStatus("listening")
       startListening()
@@ -91,14 +84,13 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
   useEffect(() => {
     if(recognitionError) {
         setStatus('error');
-        setResult({ success: false, message: `Speech recognition error: ${recognitionError}` });
+        onAction?.({ success: false, message: `Speech recognition error: ${recognitionError}` });
     }
-  }, [recognitionError])
+  }, [recognitionError, onAction])
 
   const handleMicClick = () => {
     if (isListening) {
       stopListening()
-      // The onEnd callback from the hook will set the status if needed.
     } else {
       setStatus('listening');
       setLastTranscript("");
@@ -125,13 +117,13 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
         return {
           icon: <CheckCircle className="size-12 text-green-500" />,
           title: "Success!",
-          description: result?.message || "Command executed successfully.",
+          description: "Command executed successfully.",
         }
       case "error":
         return {
           icon: <XCircle className="size-12 text-destructive" />,
           title: "Error",
-          description: result?.message || "Something went wrong.",
+          description: `An error occurred.`,
         }
       case "idle":
       default:
@@ -146,7 +138,6 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
   const { icon, title, description } = getStatusContent()
 
   if (!hasRecognitionSupport) {
-    // This should be handled by the parent, but as a fallback:
     if (open) onOpenChange(false)
     return null
   }

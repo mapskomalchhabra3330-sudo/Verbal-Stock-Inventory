@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { VoiceCommandDialog } from "./voice-command-dialog"
 import type { VoiceCommandResponse } from "@/lib/types"
+import { useToast } from "@/hooks/use-toast"
 
 function getTitleFromPathname(pathname: string): string {
   if (pathname.includes("/inventory")) return "Inventory"
@@ -28,6 +29,7 @@ export function DashboardHeader() {
   const { isMobile } = useSidebar()
   const pathname = usePathname()
   const router = useRouter()
+  const { toast } = useToast()
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false)
   const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false)
 
@@ -35,13 +37,20 @@ export function DashboardHeader() {
     setHasSpeechRecognition(typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window));
   }, []);
 
-  const handleVoiceAction = useCallback((action: VoiceCommandResponse['action'], data: any) => {
+  const handleVoiceAction = useCallback((response: VoiceCommandResponse) => {
+    const { action, data, success, message } = response;
+    // Always close the dialog when an action is processed
     setIsVoiceDialogOpen(false);
-    
-    // Actions that modify data and require a refresh
-    if (['REFRESH_INVENTORY', 'REFRESH_DASHBOARD'].includes(action || '')) {
-      router.refresh();
-      return;
+
+    // Show a toast for success/error messages from actions that modify data
+    if (action?.startsWith('REFRESH')) {
+        if (success) {
+            toast({ title: "Success", description: message });
+            router.refresh();
+        } else {
+            toast({ variant: "destructive", title: "Error", description: message });
+        }
+        return;
     }
 
     // Actions that open dialogs via URL params
@@ -69,14 +78,20 @@ export function DashboardHeader() {
         params.set('deleteItem', data.itemName);
         break;
       default:
-        // For other actions or no action, we might not need to navigate.
-        // If navigation is needed, it can be handled here.
+        // For other actions (like CHECK_STOCK or UNKNOWN), show toast directly
+        if(message) {
+            toast({
+                title: success ? "Information" : "Error",
+                description: message,
+                variant: success ? "default" : "destructive"
+            });
+        }
         return;
     }
     
     router.push(`${targetPath}?${params.toString()}`);
 
-  }, [router, pathname]);
+  }, [router, toast]);
 
 
   return (
