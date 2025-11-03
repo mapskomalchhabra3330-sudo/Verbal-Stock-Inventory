@@ -1,8 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { generateSalesReport } from '@/ai/flows/generate-sales-report'
-import { setReorderAlert } from '@/ai/flows/voice-based-reorder-alerts'
+import { processCommand } from '@/ai/flows/process-command-flow'
 import { inventory } from './data'
 import type { InventoryItem, VoiceCommandResponse } from './types'
 
@@ -47,79 +46,69 @@ export async function updateStock(itemName: string, quantityChange: number): Pro
 }
 
 export async function processVoiceCommand(command: string): Promise<VoiceCommandResponse> {
-  const lowerCaseCommand = command.toLowerCase();
+  try {
+    const result = await processCommand({ command });
 
-  // Regex patterns for various commands
-  const addStockRegex = /(?:add|increase|put)\s*(\d+)\s*(?:units? of)?\s*(.+)/i;
-  const removeStockRegex = /(?:remove|decrease|take|sell)\s*(\d+)\s*(?:units? of)?\s*(.+)/i;
-  const checkStockRegex = /(?:check|how many|quantity of|what's the stock of)\s*(.+)/i;
-  const setAlertRegex = /set\s*(?:reorder)?\s*alert for\s*(.+?)\s*at\s*(\d+)/i;
-  const generateReportRegex = /generate\s*(.+?)\s*report/i;
-  const addNewItemRegex = /add\s*(?:a)?\s*new item/i;
-
-  let match;
-
-  if (addNewItemRegex.test(lowerCaseCommand)) {
-    return { success: true, message: 'Opening form to add a new item.', action: 'OPEN_ADD_ITEM_DIALOG' };
-  }
-
-  match = lowerCaseCommand.match(addStockRegex);
-  if (match) {
-    const [, quantity, itemName] = match;
-    const item = await updateStock(itemName.trim(), parseInt(quantity));
-    if (item) {
-      return { success: true, message: `Added ${quantity} units to ${item.name}. New stock is ${item.stock}.`, action: 'REFRESH_INVENTORY' };
-    }
-    return { success: false, message: `Could not find item "${itemName.trim()}".` };
-  }
-
-  match = lowerCaseCommand.match(removeStockRegex);
-  if (match) {
-    const [, quantity, itemName] = match;
-    const item = await updateStock(itemName.trim(), -parseInt(quantity));
-    if (item) {
-      return { success: true, message: `Removed ${quantity} units from ${item.name}. New stock is ${item.stock}.`, action: 'REFRESH_INVENTORY' };
-    }
-    return { success: false, message: `Could not find item "${itemName.trim()}".` };
-  }
-  
-  match = lowerCaseCommand.match(setAlertRegex);
-  if (match) {
-    const [, item, threshold] = match;
-    try {
-        const result = await setReorderAlert({ item: item.trim(), threshold: parseInt(threshold) });
-        if (result.success) {
-            const itemToUpdate = mockInventory.find(i => i.name.toLowerCase().includes(item.trim().toLowerCase()));
-            if(itemToUpdate) {
-                itemToUpdate.reorderLevel = parseInt(threshold);
-                revalidatePath('/dashboard/inventory');
-            }
+    switch (result.action) {
+      case 'ADD_STOCK': {
+        const { itemName, quantity } = result;
+        if (!itemName || quantity === undefined) return { success: false, message: "I didn't catch the item name or quantity." };
+        const item = await updateStock(itemName, quantity);
+        if (item) {
+          return { success: true, message: `Added ${quantity} units to ${item.name}. New stock is ${item.stock}.`, action: 'REFRESH_INVENTORY' };
         }
-        return { success: result.success, message: result.message, action: 'REFRESH_INVENTORY' };
-    } catch (error) {
-        return { success: false, message: "Sorry, I couldn't set the reorder alert." };
-    }
-  }
+        return { success: false, message: `Could not find item "${itemName}".` };
+      }
+      
+      case 'REMOVE_STOCK': {
+        const { itemName, quantity } = result;
+        if (!itemName || quantity === undefined) return { success: false, message: "I didn't catch the item name or quantity." };
+        const item = await updateStock(itemName, -quantity);
+        if (item) {
+          return { success: true, message: `Removed ${quantity} units from ${item.name}. New stock is ${item.stock}.`, action: 'REFRESH_INVENTORY' };
+        }
+        return { success: false, message: `Could not find item "${itemName}".` };
+      }
 
-  match = lowerCaseCommand.match(generateReportRegex);
-  if (match) {
-    try {
-      const result = await generateSalesReport({ voiceCommand: command });
-      return { success: true, message: `This month's most demanded product is: ${result.mostDemandedProduct}.`, data: result };
-    } catch (error) {
-      return { success: false, message: "Sorry, I couldn't generate the report." };
-    }
-  }
+      case 'CHECK_STOCK': {
+        const { itemName } = result;
+        if (!itemName) return { success: false, message: "I didn't catch the item name." };
+        const item = await getItemByName(itemName);
+        if (item) {
+          return { success: true, message: `You have ${item.stock} units of ${item.name} in stock.` };
+        }
+        return { success: false, message: `Could not find item "${itemName}".` };
+      }
 
-  match = lowerCaseCommand.match(checkStockRegex);
-  if (match) {
-    const [, itemName] = match;
-    const item = await getItemByName(itemName.replace(/\?$/, '').trim());
-    if (item) {
-      return { success: true, message: `You have ${item.stock} units of ${item.name} in stock.` };
-    }
-    return { success: false, message: `Could not find item "${itemName.trim()}".` };
-  }
+      case 'SET_REORDER_ALERT': {
+        const { itemName, threshold } = result;
+        if (!itemName || threshold === undefined) return { success: false, message: "I didn't catch the item name or threshold." };
+        const itemToUpdate = mockInventory.find(i => i.name.toLowerCase().includes(itemName.toLowerCase()));
+        if (itemToUpdate) {
+            itemToUpdate.reorderLevel = threshold;
+            revalidatePath('/dashboard/inventory');
+            return { success: true, message: `Reorder alert for ${itemToUpdate.name} set to ${threshold}.`, action: 'REFRESH_INVENTORY' };
+        }
+        return { success: false, message: `Could not find item "${itemName}".` };
+      }
 
-  return { success: false, message: "Sorry, I didn't understand that command." };
+      case 'ADD_NEW_ITEM': {
+        return { success: true, message: 'Opening form to add a new item.', action: 'OPEN_ADD_ITEM_DIALOG' };
+      }
+      
+      case 'GENERATE_SALES_REPORT': {
+         // In a real app, the LLM could determine the most demanded product from data.
+         // For now, we'll return a mock response.
+        const mostDemanded = mockInventory.reduce((prev, current) => (prev.price > current.price) ? prev : current);
+        return { success: true, message: `This month's most demanded product is: ${mostDemanded.name}.`, data: { mostDemandedProduct: mostDemanded.name } };
+      }
+
+      case 'UNKNOWN_COMMAND':
+      default:
+        return { success: false, message: result.message || "Sorry, I didn't understand that command." };
+    }
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: "Sorry, I'm having trouble processing commands right now." };
+  }
 }
