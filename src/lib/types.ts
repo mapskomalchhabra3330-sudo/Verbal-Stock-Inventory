@@ -52,9 +52,14 @@ export const ProcessCommandOutputSchema = z.discriminatedUnion('action', [
     price: z.number().optional().describe('The price of the new item.'),
     reorderLevel: z.number().optional().describe('The reorder level for the new item.'),
   }),
-  z.object({
+   z.object({
     action: z.enum(['EDIT_ITEM']),
     itemName: z.string().describe('The name of the item to edit.'),
+    stock: z.number().optional().describe('The new stock quantity for the item.'),
+    reorderLevel: z.number().optional().describe('The new reorder level for the item.'),
+    price: z.number().optional().describe('The new price for the item.'),
+    category: z.string().optional().describe('The new category for the item.'),
+    supplier: z.string().optional().describe('The new supplier for the item.'),
   }),
   z.object({
     action: z.enum(['VIEW_ITEM_DETAILS']),

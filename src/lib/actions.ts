@@ -139,8 +139,32 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       }
       
       case 'EDIT_ITEM': {
-        const { itemName } = result;
+        const { itemName, ...updates } = result;
         if (!itemName) return { success: false, message: "I didn't catch which item to edit." };
+
+        const itemToUpdate = await getItemByName(itemName);
+        if (!itemToUpdate) {
+          return { success: false, message: `Could not find item "${itemName}".` };
+        }
+
+        const hasUpdates = Object.values(updates).some(val => val !== undefined);
+
+        if (hasUpdates) {
+          const updatedItem = await updateItem(itemToUpdate.id, updates);
+          let updateMessages: string[] = [];
+          if (updates.price !== undefined) updateMessages.push(`price to ${updatedItem.price}`);
+          if (updates.stock !== undefined) updateMessages.push(`stock to ${updatedItem.stock}`);
+          if (updates.reorderLevel !== undefined) updateMessages.push(`reorder level to ${updatedItem.reorderLevel}`);
+          if (updates.category !== undefined) updateMessages.push(`category to ${updatedItem.category}`);
+          if (updates.supplier !== undefined) updateMessages.push(`supplier to ${updatedItem.supplier}`);
+
+          return { 
+            success: true, 
+            message: `Updated ${updatedItem.name}: set ${updateMessages.join(', ')}.`,
+            action: 'REFRESH_INVENTORY'
+          };
+        }
+
         return { 
             success: true, 
             message: `Opening dialog to edit ${itemName}.`, 
