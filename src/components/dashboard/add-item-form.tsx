@@ -148,7 +148,7 @@ export function AddItemForm({ onSuccess, initialData }: AddItemFormProps) {
                   name="price"
                   render={({ field }) => (
                       <FormItem>
-                      <FormLabel>Price (INR)</FormLabel>
+                      <FormLabel>Price (Rs)</FormLabel>
                       <FormControl>
                           <Input type="number" step="0.01" {...field} value={field.value || ''} />
                       </FormControl>
