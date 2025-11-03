@@ -97,7 +97,16 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
       }
 
       case 'ADD_NEW_ITEM': {
-        return { success: true, message: 'Opening form to add a new item.', action: 'OPEN_ADD_ITEM_DIALOG' };
+        const { itemName } = result;
+        if (!itemName) {
+            return { success: true, message: 'Opening form to add a new item.', action: 'OPEN_ADD_ITEM_DIALOG' };
+        }
+        return { 
+            success: true, 
+            message: `Opening form to add "${itemName}".`, 
+            action: 'OPEN_ADD_ITEM_DIALOG',
+            data: { itemName }
+        };
       }
       
       case 'GENERATE_SALES_REPORT': {

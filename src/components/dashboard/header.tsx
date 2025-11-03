@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
+import { useEffect, useState, useCallback } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { Mic, CircleUser, Settings, LogOut } from "lucide-react"
 
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { VoiceCommandDialog } from "./voice-command-dialog"
+import type { VoiceCommandResponse } from "@/lib/types"
 
 function getTitleFromPathname(pathname: string): string {
   if (pathname.includes("/inventory")) return "Inventory"
@@ -26,12 +27,24 @@ function getTitleFromPathname(pathname: string): string {
 export function DashboardHeader() {
   const { isMobile } = useSidebar()
   const pathname = usePathname()
+  const router = useRouter()
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false)
   const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false)
 
   useEffect(() => {
     setHasSpeechRecognition(typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window));
   }, []);
+
+  const handleVoiceAction = useCallback((action: VoiceCommandResponse['action'], data: any) => {
+    if (action === 'OPEN_ADD_ITEM_DIALOG') {
+      setIsVoiceDialogOpen(false);
+      let url = '/dashboard/inventory?openAddDialog=true';
+      if (data?.itemName) {
+        url += `&itemName=${encodeURIComponent(data.itemName)}`;
+      }
+      router.push(url);
+    }
+  }, [router]);
 
 
   return (
@@ -80,7 +93,7 @@ export function DashboardHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {hasSpeechRecognition && <VoiceCommandDialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen} />}
+      {hasSpeechRecognition && <VoiceCommandDialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen} onAction={handleVoiceAction} />}
     </header>
   )
 }

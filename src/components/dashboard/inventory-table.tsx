@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -48,134 +47,136 @@ import { formatCurrency } from "@/lib/utils"
 import type { InventoryItem } from "@/lib/types"
 import { AddItemForm } from "./add-item-form"
 
-export const columns: ColumnDef<InventoryItem>[] = [
-  {
-    id: "select",
-    header: ({ table }) => (
-      <Checkbox
-        checked={
-          table.getIsAllPageRowsSelected() ||
-          (table.getIsSomePageRowsSelected() && "indeterminate")
-        }
-        onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-        aria-label="Select all"
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        checked={row.getIsSelected()}
-        onCheckedChange={(value) => row.toggleSelected(!!value)}
-        aria-label="Select row"
-      />
-    ),
-    enableSorting: false,
-    enableHiding: false,
-  },
-  {
-    accessorKey: "name",
-    header: "Product",
-    cell: ({ row }) => {
-      const item = row.original
-      return (
-        <div className="flex items-center gap-4">
-          <Image
-            src={item.imageUrl}
-            alt={item.name}
-            width={40}
-            height={40}
-            className="rounded-md object-cover"
-            data-ai-hint="product image"
-          />
-          <div className="flex flex-col">
-            <span className="font-medium">{item.name}</span>
-            <span className="text-xs text-muted-foreground">{item.id}</span>
-          </div>
-        </div>
-      )
-    }
-  },
-  {
-    accessorKey: "stock",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Stock
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
-    },
-    cell: ({ row }) => {
-        const item = row.original;
-        const inStock = item.stock > item.reorderLevel;
-        const lowStock = item.stock > 0 && item.stock <= item.reorderLevel;
-        const outOfStock = item.stock === 0;
-
-        return (
-            <div className="flex flex-col text-left">
-                <span className="font-mono">{item.stock}</span>
-                {inStock && <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">In Stock</Badge>}
-                {lowStock && <Badge variant="destructive" className="bg-yellow-100 text-yellow-800 w-fit">Low Stock</Badge>}
-                {outOfStock && <Badge variant="destructive">Out of Stock</Badge>}
-            </div>
-        )
-    },
-  },
-  {
-    accessorKey: "price",
-    header: () => <div className="text-right">Price</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("price"))
-      return <div className="text-right font-medium">{formatCurrency(amount)}</div>
-    },
-  },
-  {
-    accessorKey: "category",
-    header: "Category",
-  },
-  {
-    accessorKey: "supplier",
-    header: "Supplier",
-  },
-  {
-    id: "actions",
-    enableHiding: false,
-    cell: ({ row }) => {
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem>Edit Product</DropdownMenuItem>
-            <DropdownMenuItem>View Details</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
-              Delete Product
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
-]
-
 type InventoryTableProps = {
     data: InventoryItem[]
+    openAddDialog?: boolean
+    newItemName?: string
 }
 
-export function InventoryTable({ data }: InventoryTableProps) {
+export function InventoryTable({ data, openAddDialog = false, newItemName }: InventoryTableProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-  const [isAddFormOpen, setIsAddFormOpen] = React.useState(false)
+  const [isAddFormOpen, setIsAddFormOpen] = React.useState(openAddDialog)
+  const [prefilledItemName, setPrefilledItemName] = React.useState(newItemName);
+
+  React.useEffect(() => {
+    if (openAddDialog) {
+      setIsAddFormOpen(true);
+      setPrefilledItemName(newItemName);
+    }
+  }, [openAddDialog, newItemName]);
+
+  const columns: ColumnDef<InventoryItem>[] = React.useMemo(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "name",
+      header: "Product",
+      cell: ({ row }) => {
+        const item = row.original
+        return (
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col">
+              <span className="font-medium">{item.name}</span>
+              <span className="text-xs text-muted-foreground">{item.id}</span>
+            </div>
+          </div>
+        )
+      }
+    },
+    {
+      accessorKey: "stock",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Stock
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => {
+          const item = row.original;
+          const inStock = item.stock > item.reorderLevel;
+          const lowStock = item.stock > 0 && item.stock <= item.reorderLevel;
+          const outOfStock = item.stock === 0;
+  
+          return (
+              <div className="flex flex-col text-left">
+                  <span className="font-mono">{item.stock}</span>
+                  {inStock && <Badge variant="secondary" className="bg-green-100 text-green-800 w-fit">In Stock</Badge>}
+                  {lowStock && <Badge variant="destructive" className="bg-yellow-100 text-yellow-800 w-fit">Low Stock</Badge>}
+                  {outOfStock && <Badge variant="destructive">Out of Stock</Badge>}
+              </div>
+          )
+      },
+    },
+    {
+      accessorKey: "price",
+      header: () => <div className="text-right">Price</div>,
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("price"))
+        return <div className="text-right font-medium">{formatCurrency(amount)}</div>
+      },
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+    },
+    {
+      accessorKey: "supplier",
+      header: "Supplier",
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem>Edit Product</DropdownMenuItem>
+              <DropdownMenuItem>View Details</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-destructive">
+                Delete Product
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ], []);
 
   const table = useReactTable({
     data,
@@ -222,7 +223,10 @@ export function InventoryTable({ data }: InventoryTableProps) {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4">
-                    <AddItemForm onSuccess={() => setIsAddFormOpen(false)} />
+                    <AddItemForm 
+                      onSuccess={() => setIsAddFormOpen(false)} 
+                      initialData={prefilledItemName ? { name: prefilledItemName } : undefined}
+                    />
                 </div>
             </DialogContent>
         </Dialog>

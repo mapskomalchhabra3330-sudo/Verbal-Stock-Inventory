@@ -20,11 +20,12 @@ import type { VoiceCommandResponse } from "@/lib/types"
 type VoiceCommandDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onAction?: (action: VoiceCommandResponse['action'], data: any) => void
 }
 
 type Status = "idle" | "listening" | "processing" | "success" | "error"
 
-export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogProps) {
+export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceCommandDialogProps) {
   const [status, setStatus] = useState<Status>("idle")
   const [result, setResult] = useState<VoiceCommandResponse | null>(null)
   const router = useRouter()
@@ -40,15 +41,20 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
       setResult(res)
       setStatus(res.success ? "success" : "error")
 
+      if (res.action) {
+        onAction?.(res.action, res.data);
+      }
+      
       if (res.action === 'REFRESH_DASHBOARD' || res.action === 'REFRESH_INVENTORY') {
         router.refresh()
       }
       
     } catch (e) {
-      setResult({ success: false, message: "An unexpected error occurred." })
+      const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
+      setResult({ success: false, message: `Error: ${errorMessage}` })
       setStatus("error")
     }
-  }, [router]);
+  }, [router, onAction]);
 
   const {
     isListening,
@@ -69,7 +75,7 @@ export function VoiceCommandDialog({ open, onOpenChange }: VoiceCommandDialogPro
       stopListening()
       setStatus("idle")
     }
-  }, [open]) // Dependencies simplified
+  }, [open, startListening, stopListening])
 
   useEffect(() => {
     if(recognitionError) {

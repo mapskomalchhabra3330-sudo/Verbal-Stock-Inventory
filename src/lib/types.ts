@@ -48,7 +48,7 @@ export const ProcessCommandOutputSchema = z.discriminatedUnion('action', [
   }),
   z.object({
     action: z.enum(['ADD_NEW_ITEM']),
-    message: z.string().describe('A confirmation message for opening the add item dialog.')
+    itemName: z.string().optional().describe('The name of the new item to add.'),
   }),
   z.object({
     action: z.enum(['UNKNOWN_COMMAND']),
