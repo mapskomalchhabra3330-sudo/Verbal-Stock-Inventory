@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { useToast } from "@/hooks/use-toast"
-import { addItem } from "@/lib/actions"
+import { addItem, updateItem } from "@/lib/actions"
 import type { InventoryItem } from "@/lib/types"
 
 const formSchema = z.object({
@@ -33,10 +33,11 @@ type AddItemFormValues = z.infer<typeof formSchema>
 
 type AddItemFormProps = {
   onSuccess: (item: InventoryItem) => void;
-  initialData?: Partial<AddItemFormValues>;
+  initialData?: Partial<InventoryItem>;
+  isEditing?: boolean;
 }
 
-export function AddItemForm({ onSuccess, initialData }: AddItemFormProps) {
+export function AddItemForm({ onSuccess, initialData, isEditing = false }: AddItemFormProps) {
   const { toast } = useToast()
   const form = useForm<AddItemFormValues>({
     resolver: zodResolver(formSchema),
@@ -67,18 +68,28 @@ export function AddItemForm({ onSuccess, initialData }: AddItemFormProps) {
 
   async function onSubmit(values: AddItemFormValues) {
     try {
-      const newItem = await addItem(values);
-      toast({
-        title: "Item Added",
-        description: `Successfully added "${newItem.name}" to your inventory.`,
-      })
-      onSuccess(newItem);
-      form.reset();
+      if (isEditing) {
+        if (!initialData?.id) throw new Error("Item ID is missing for editing.");
+        const updatedItem = await updateItem(initialData.id, values);
+         toast({
+          title: "Item Updated",
+          description: `Successfully updated "${updatedItem.name}".`,
+        });
+        onSuccess(updatedItem);
+      } else {
+        const newItem = await addItem(values);
+        toast({
+          title: "Item Added",
+          description: `Successfully added "${newItem.name}" to your inventory.`,
+        });
+        onSuccess(newItem);
+        form.reset();
+      }
     } catch (error) {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to add the item. Please try again.",
+        description: `Failed to ${isEditing ? 'update' : 'add'} the item. Please try again.`,
       })
     }
   }
@@ -175,8 +186,10 @@ export function AddItemForm({ onSuccess, initialData }: AddItemFormProps) {
         </div>
         
         <div className="flex justify-end">
-            <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Adding..." : "Add Product"}
+             <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting
+                ? isEditing ? "Saving..." : "Adding..."
+                : isEditing ? "Save Changes" : "Add Product"}
             </Button>
         </div>
       </form>

@@ -3,14 +3,13 @@
 import { useSearchParams } from 'next/navigation'
 import type { InventoryItem } from "@/lib/types"
 import { InventoryTable } from "@/components/dashboard/inventory-table"
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 type InventoryClientProps = {
     initialData: InventoryItem[];
-    onItemAdded: (item: InventoryItem) => void;
 }
 
-export function InventoryClient({ initialData, onItemAdded }: InventoryClientProps) {
+export function InventoryClient({ initialData }: InventoryClientProps) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialData);
     const searchParams = useSearchParams()
     const openAddDialog = searchParams.get('openAddDialog') === 'true';
@@ -21,12 +20,18 @@ export function InventoryClient({ initialData, onItemAdded }: InventoryClientPro
     if (searchParams.has('price')) newItemData.price = Number(searchParams.get('price'));
     if (searchParams.has('reorderLevel')) newItemData.reorderLevel = Number(searchParams.get('reorderLevel'));
 
-
-    const handleItemAdded = (newItem: InventoryItem) => {
+    const handleItemAdded = useCallback((newItem: InventoryItem) => {
         setInventory(prev => [newItem, ...prev]);
-        onItemAdded(newItem);
-    }
-    
+    }, []);
+
+    const handleItemUpdated = useCallback((updatedItem: InventoryItem) => {
+        setInventory(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+    }, []);
+
+    const handleItemDeleted = useCallback((deletedItemId: string) => {
+        setInventory(prev => prev.filter(item => item.id !== deletedItemId));
+    }, []);
+
     return (
         <div className="container mx-auto py-10">
             <InventoryTable 
@@ -34,6 +39,8 @@ export function InventoryClient({ initialData, onItemAdded }: InventoryClientPro
                 openAddDialog={openAddDialog} 
                 newItemData={newItemData}
                 onItemAdded={handleItemAdded}
+                onItemUpdated={handleItemUpdated}
+                onItemDeleted={handleItemDeleted}
             />
         </div>
     )

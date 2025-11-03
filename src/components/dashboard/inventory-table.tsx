@@ -41,20 +41,38 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
+  DialogFooter
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
 import type { InventoryItem } from "@/lib/types"
 import { AddItemForm } from "./add-item-form"
+import { updateItem, deleteItem } from "@/lib/actions"
+import { useToast } from "@/hooks/use-toast"
 
 type InventoryTableProps = {
     data: InventoryItem[]
     openAddDialog?: boolean
     newItemData?: Partial<InventoryItem>
     onItemAdded: (item: InventoryItem) => void;
+    onItemUpdated: (item: InventoryItem) => void;
+    onItemDeleted: (id: string) => void;
 }
 
-export function InventoryTable({ data, openAddDialog = false, newItemData, onItemAdded }: InventoryTableProps) {
+export function InventoryTable({ data, openAddDialog = false, newItemData, onItemAdded, onItemUpdated, onItemDeleted }: InventoryTableProps) {
+  const { toast } = useToast()
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
@@ -62,12 +80,50 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
   const [isAddFormOpen, setIsAddFormOpen] = React.useState(openAddDialog)
   const [prefilledData, setPrefilledData] = React.useState(newItemData);
 
+  const [editingItem, setEditingItem] = React.useState<InventoryItem | null>(null);
+  const [viewingItem, setViewingItem] = React.useState<InventoryItem | null>(null);
+  const [deletingItem, setDeletingItem] = React.useState<InventoryItem | null>(null);
+
+
   React.useEffect(() => {
     setIsAddFormOpen(openAddDialog);
     if(openAddDialog) {
       setPrefilledData(newItemData);
     }
   }, [openAddDialog, newItemData]);
+
+  const handleEdit = (item: InventoryItem) => {
+    setEditingItem(item);
+  };
+
+  const handleView = (item: InventoryItem) => {
+    setViewingItem(item);
+  };
+  
+  const handleDelete = (item: InventoryItem) => {
+    setDeletingItem(item);
+  };
+
+  const confirmDelete = async () => {
+    if (deletingItem) {
+      try {
+        await deleteItem(deletingItem.id);
+        onItemDeleted(deletingItem.id);
+        toast({
+          title: "Item Deleted",
+          description: `Successfully deleted "${deletingItem.name}".`,
+        });
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to delete the item.",
+        });
+      } finally {
+        setDeletingItem(null);
+      }
+    }
+  };
 
   const columns: ColumnDef<InventoryItem>[] = React.useMemo(() => [
     {
@@ -156,6 +212,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => {
+        const item = row.original;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -166,10 +223,10 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem>Edit Product</DropdownMenuItem>
-              <DropdownMenuItem>View Details</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEdit(item)}>Edit Product</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleView(item)}>View Details</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(item)}>
                 Delete Product
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -177,7 +234,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
         )
       },
     },
-  ], []);
+  ], [onItemUpdated]);
 
   const table = useReactTable({
     data,
@@ -198,10 +255,16 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
     },
   })
   
-  const handleSuccess = (newItem: InventoryItem) => {
+  const handleAddSuccess = (newItem: InventoryItem) => {
     onItemAdded(newItem);
     setIsAddFormOpen(false)
   }
+
+  const handleEditSuccess = (updatedItem: InventoryItem) => {
+    onItemUpdated(updatedItem);
+    setEditingItem(null);
+  };
+
 
   return (
     <div className="w-full">
@@ -233,7 +296,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
                 </DialogHeader>
                 <div className="py-4">
                     <AddItemForm 
-                      onSuccess={handleSuccess} 
+                      onSuccess={handleAddSuccess} 
                       initialData={prefilledData}
                     />
                 </div>
@@ -314,6 +377,81 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
           </Button>
         </div>
       </div>
+       {/* Edit Dialog */}
+      <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+        <DialogContent className="sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Edit Product</DialogTitle>
+            <DialogDescription>
+              Update the details for "{editingItem?.name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <AddItemForm
+              onSuccess={handleEditSuccess}
+              initialData={editingItem!}
+              isEditing
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* View Details Dialog */}
+      <Dialog open={!!viewingItem} onOpenChange={() => setViewingItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{viewingItem?.name}</DialogTitle>
+            <DialogDescription>Product ID: {viewingItem?.id}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="font-semibold">Stock:</span>
+              <span>{viewingItem?.stock}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="font-semibold">Price:</span>
+              <span>{formatCurrency(viewingItem?.price || 0)}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="font-semibold">Reorder Level:</span>
+              <span>{viewingItem?.reorderLevel}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="font-semibold">Category:</span>
+              <span>{viewingItem?.category}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="font-semibold">Supplier:</span>
+              <span>{viewingItem?.supplier}</span>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-4">
+              <span className="font-semibold">Last Updated:</span>
+              <span>{viewingItem ? new Date(viewingItem.lastUpdated).toLocaleString() : ''}</span>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button">Close</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+       <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete "{deletingItem?.name}" from your inventory.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

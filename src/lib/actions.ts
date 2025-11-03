@@ -18,11 +18,10 @@ export async function getItemByName(name: string): Promise<InventoryItem | undef
     return item ? JSON.parse(JSON.stringify(item)) : undefined;
 }
 
-export async function addItem(itemData: Omit<InventoryItem, 'id' | 'lastUpdated' | 'imageUrl'> & { imageUrl?: string }): Promise<InventoryItem> {
+export async function addItem(itemData: Omit<InventoryItem, 'id' | 'lastUpdated'>): Promise<InventoryItem> {
     const newItem: InventoryItem = {
         id: `ITEM-${String(mockInventory.length + 1).padStart(3, '0')}`,
         ...itemData,
-        imageUrl: itemData.imageUrl || '',
         lastUpdated: new Date().toISOString(),
     };
     mockInventory.unshift(newItem);
@@ -30,6 +29,33 @@ export async function addItem(itemData: Omit<InventoryItem, 'id' | 'lastUpdated'
     revalidatePath('/dashboard/inventory');
     return JSON.parse(JSON.stringify(newItem));
 }
+
+export async function updateItem(id: string, itemData: Partial<Omit<InventoryItem, 'id' | 'lastUpdated'>>): Promise<InventoryItem> {
+    const itemIndex = mockInventory.findIndex(i => i.id === id);
+    if (itemIndex > -1) {
+        mockInventory[itemIndex] = {
+            ...mockInventory[itemIndex],
+            ...itemData,
+            lastUpdated: new Date().toISOString(),
+        };
+        revalidatePath('/dashboard');
+        revalidatePath('/dashboard/inventory');
+        return JSON.parse(JSON.stringify(mockInventory[itemIndex]));
+    }
+    throw new Error("Item not found");
+}
+
+export async function deleteItem(id: string): Promise<{ success: true }> {
+    const initialLength = mockInventory.length;
+    mockInventory = mockInventory.filter(item => item.id !== id);
+    if (mockInventory.length === initialLength) {
+        throw new Error("Item not found");
+    }
+    revalidatePath('/dashboard');
+    revalidatePath('/dashboard/inventory');
+    return { success: true };
+}
+
 
 export async function updateStock(itemName: string, quantityChange: number): Promise<InventoryItem | null> {
     const itemIndex = mockInventory.findIndex(i => i.name.toLowerCase().includes(itemName.toLowerCase()));

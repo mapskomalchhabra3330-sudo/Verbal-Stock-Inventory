@@ -24,11 +24,7 @@ export default function InventoryPage() {
         return <div className="container mx-auto py-10">Loading...</div>
     }
 
-    const handleItemAdded = (newItem: InventoryItem) => {
-        setInventory(prevInventory => [newItem, ...prevInventory]);
-    };
-
     return (
-        <InventoryClient initialData={inventory} onItemAdded={handleItemAdded} />
+        <InventoryClient initialData={inventory} />
     )
 }

@@ -8,7 +8,6 @@ export type InventoryItem = {
   price: number;
   category: string;
   supplier: string;
-  imageUrl: string;
   lastUpdated: string;
 };
 

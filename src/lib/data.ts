@@ -1,9 +1,4 @@
 import type { InventoryItem } from './types';
-import { PlaceHolderImages } from './placeholder-images';
-
-const getImageUrl = (id: string) => {
-    return PlaceHolderImages.find(img => img.id === id)?.imageUrl || PlaceHolderImages.find(img => img.id === 'default')?.imageUrl || '';
-}
 
 export const inventory: InventoryItem[] = [
   {
@@ -14,7 +9,6 @@ export const inventory: InventoryItem[] = [
     price: 3.5,
     category: 'Dairy',
     supplier: 'Farm Fresh',
-    imageUrl: getImageUrl('milk'),
     lastUpdated: '2024-05-20T10:00:00Z',
   },
   {
@@ -25,7 +19,6 @@ export const inventory: InventoryItem[] = [
     price: 4.0,
     category: 'Bakery',
     supplier: 'Artisan Bakers',
-    imageUrl: getImageUrl('bread'),
     lastUpdated: '2024-05-21T09:30:00Z',
   },
   {
@@ -36,7 +29,6 @@ export const inventory: InventoryItem[] = [
     price: 5.25,
     category: 'Dairy',
     supplier: 'Happy Hens Farm',
-    imageUrl: getImageUrl('eggs'),
     lastUpdated: '2024-05-19T14:15:00Z',
   },
   {
@@ -47,7 +39,6 @@ export const inventory: InventoryItem[] = [
     price: 0.5,
     category: 'Produce',
     supplier: 'Orchard Growers',
-    imageUrl: getImageUrl('apples'),
     lastUpdated: '2024-05-22T11:00:00Z',
   },
   {
@@ -58,7 +49,6 @@ export const inventory: InventoryItem[] = [
     price: 4.75,
     category: 'Pantry',
     supplier: 'Good Grains Co.',
-    imageUrl: getImageUrl('cereal'),
     lastUpdated: '2024-05-21T16:45:00Z',
   },
   {
@@ -69,7 +59,6 @@ export const inventory: InventoryItem[] = [
     price: 1.25,
     category: 'Beverages',
     supplier: 'Fizzy Drinks Inc.',
-    imageUrl: getImageUrl('soda'),
     lastUpdated: '2024-05-22T08:00:00Z',
   },
   {
@@ -80,7 +69,6 @@ export const inventory: InventoryItem[] = [
     price: 8.0,
     category: 'Dairy',
     supplier: 'Cheese Masters',
-    imageUrl: getImageUrl('cheese'),
     lastUpdated: '2024-05-20T18:20:00Z',
   },
   {
@@ -91,7 +79,6 @@ export const inventory: InventoryItem[] = [
     price: 2.0,
     category: 'Dairy',
     supplier: 'Farm Fresh',
-    imageUrl: getImageUrl('yogurt'),
     lastUpdated: '2024-05-22T13:00:00Z',
   },
 ];
