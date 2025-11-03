@@ -51,7 +51,7 @@ export function VoiceCommandDialog({ open, onOpenChange, onAction }: VoiceComman
       
     } catch (e) {
       const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
-      setResult({ success: false, message: `Error: ${errorMessage}` })
+      setResult({ success: false, message: errorMessage })
       setStatus("error")
     }
   }, [router, onAction]);

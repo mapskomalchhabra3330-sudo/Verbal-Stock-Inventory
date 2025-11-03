@@ -36,18 +36,41 @@ export function DashboardHeader() {
   }, []);
 
   const handleVoiceAction = useCallback((action: VoiceCommandResponse['action'], data: any) => {
-    if (action === 'OPEN_ADD_ITEM_DIALOG') {
-      setIsVoiceDialogOpen(false);
-      const params = new URLSearchParams();
-      params.set('openAddDialog', 'true');
-      if (data?.itemName) params.set('itemName', data.itemName);
-      if (data?.quantity !== undefined) params.set('quantity', data.quantity);
-      if (data?.price !== undefined) params.set('price', data.price);
-      if (data?.reorderLevel !== undefined) params.set('reorderLevel', data.reorderLevel);
-      
-      router.push(`/dashboard/inventory?${params.toString()}`);
+    setIsVoiceDialogOpen(false);
+    const params = new URLSearchParams();
+    let targetPath = '/dashboard/inventory';
+
+    switch (action) {
+      case 'OPEN_ADD_ITEM_DIALOG':
+        params.set('openAddDialog', 'true');
+        if (data?.itemName) params.set('itemName', data.itemName);
+        if (data?.quantity !== undefined) params.set('quantity', data.quantity.toString());
+        if (data?.price !== undefined) params.set('price', data.price.toString());
+        if (data?.reorderLevel !== undefined) params.set('reorderLevel', data.reorderLevel.toString());
+        break;
+      case 'OPEN_EDIT_DIALOG':
+        if (!data?.itemName) return;
+        params.set('editItem', data.itemName);
+        break;
+      case 'OPEN_VIEW_DIALOG':
+        if (!data?.itemName) return;
+        params.set('viewItem', data.itemName);
+        break;
+      case 'OPEN_DELETE_DIALOG':
+        if (!data?.itemName) return;
+        params.set('deleteItem', data.itemName);
+        break;
+      default:
+        // For refresh actions, we just need to re-navigate.
+        if(pathname !== '/dashboard/inventory') {
+            targetPath = pathname;
+        }
+        break;
     }
-  }, [router]);
+    
+    router.push(`${targetPath}?${params.toString()}`);
+
+  }, [router, pathname]);
 
 
   return (

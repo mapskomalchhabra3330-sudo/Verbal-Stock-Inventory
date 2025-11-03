@@ -138,6 +138,39 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
         };
       }
       
+      case 'EDIT_ITEM': {
+        const { itemName } = result;
+        if (!itemName) return { success: false, message: "I didn't catch which item to edit." };
+        return { 
+            success: true, 
+            message: `Opening dialog to edit ${itemName}.`, 
+            action: 'OPEN_EDIT_DIALOG',
+            data: { itemName }
+        };
+      }
+
+      case 'VIEW_ITEM_DETAILS': {
+        const { itemName } = result;
+        if (!itemName) return { success: false, message: "I didn't catch which item to view." };
+        return { 
+            success: true, 
+            message: `Opening details for ${itemName}.`, 
+            action: 'OPEN_VIEW_DIALOG',
+            data: { itemName }
+        };
+      }
+
+      case 'DELETE_ITEM': {
+        const { itemName } = result;
+        if (!itemName) return { success: false, message: "I didn't catch which item to delete." };
+        return { 
+            success: true, 
+            message: `Opening confirmation to delete ${itemName}.`, 
+            action: 'OPEN_DELETE_DIALOG',
+            data: { itemName }
+        };
+      }
+
       case 'GENERATE_SALES_REPORT': {
          // In a real app, the LLM could determine the most demanded product from data.
          // For now, we'll return a mock response.
@@ -152,6 +185,6 @@ export async function processVoiceCommand(command: string): Promise<VoiceCommand
   } catch (error) {
     console.error(error);
     const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-    return { success: false, message: `Error: ${errorMessage}` };
+    return { success: false, message: errorMessage };
   }
 }

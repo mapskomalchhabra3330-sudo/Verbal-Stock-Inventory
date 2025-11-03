@@ -3,7 +3,7 @@
 import { useSearchParams } from 'next/navigation'
 import type { InventoryItem } from "@/lib/types"
 import { InventoryTable } from "@/components/dashboard/inventory-table"
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 type InventoryClientProps = {
     initialData: InventoryItem[];
@@ -12,13 +12,6 @@ type InventoryClientProps = {
 export function InventoryClient({ initialData }: InventoryClientProps) {
     const [inventory, setInventory] = useState<InventoryItem[]>(initialData);
     const searchParams = useSearchParams()
-    const openAddDialog = searchParams.get('openAddDialog') === 'true';
-    
-    const newItemData: Partial<InventoryItem> = {};
-    if (searchParams.has('itemName')) newItemData.name = searchParams.get('itemName')!;
-    if (searchParams.has('quantity')) newItemData.stock = Number(searchParams.get('quantity'));
-    if (searchParams.has('price')) newItemData.price = Number(searchParams.get('price'));
-    if (searchParams.has('reorderLevel')) newItemData.reorderLevel = Number(searchParams.get('reorderLevel'));
 
     const handleItemAdded = useCallback((newItem: InventoryItem) => {
         setInventory(prev => [newItem, ...prev]);
@@ -32,15 +25,29 @@ export function InventoryClient({ initialData }: InventoryClientProps) {
         setInventory(prev => prev.filter(item => item.id !== deletedItemId));
     }, []);
 
+    const newItemData: Partial<InventoryItem> = {};
+    if (searchParams.has('itemName')) newItemData.name = searchParams.get('itemName')!;
+    if (searchParams.has('quantity')) newItemData.stock = Number(searchParams.get('quantity'));
+    if (searchParams.has('price')) newItemData.price = Number(searchParams.get('price'));
+    if (searchParams.has('reorderLevel')) newItemData.reorderLevel = Number(searchParams.get('reorderLevel'));
+
+    const findItemByName = (name: string) => {
+        return inventory.find(item => item.name.toLowerCase() === name.toLowerCase());
+    }
+
     return (
         <div className="container mx-auto py-10">
             <InventoryTable 
                 data={inventory} 
-                openAddDialog={openAddDialog} 
-                newItemData={newItemData}
                 onItemAdded={handleItemAdded}
                 onItemUpdated={handleItemUpdated}
                 onItemDeleted={handleItemDeleted}
+                // Props for dialogs triggered by URL
+                openAddDialog={searchParams.get('openAddDialog') === 'true'}
+                newItemData={newItemData}
+                itemToEdit={findItemByName(searchParams.get('editItem') || '')}
+                itemToView={findItemByName(searchParams.get('viewItem') || '')}
+                itemToDelete={findItemByName(searchParams.get('deleteItem') || '')}
             />
         </div>
     )

@@ -14,6 +14,7 @@ import {
   useReactTable,
 } from "@tanstack/react-table"
 import { ArrowUpDown, MoreHorizontal, PlusCircle } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -59,50 +60,71 @@ import { Badge } from "@/components/ui/badge"
 import { formatCurrency } from "@/lib/utils"
 import type { InventoryItem } from "@/lib/types"
 import { AddItemForm } from "./add-item-form"
-import { updateItem, deleteItem } from "@/lib/actions"
+import { deleteItem } from "@/lib/actions"
 import { useToast } from "@/hooks/use-toast"
 
 type InventoryTableProps = {
     data: InventoryItem[]
-    openAddDialog?: boolean
-    newItemData?: Partial<InventoryItem>
     onItemAdded: (item: InventoryItem) => void;
     onItemUpdated: (item: InventoryItem) => void;
     onItemDeleted: (id: string) => void;
+    openAddDialog?: boolean
+    newItemData?: Partial<InventoryItem>
+    itemToEdit?: InventoryItem;
+    itemToView?: InventoryItem;
+    itemToDelete?: InventoryItem;
 }
 
-export function InventoryTable({ data, openAddDialog = false, newItemData, onItemAdded, onItemUpdated, onItemDeleted }: InventoryTableProps) {
+export function InventoryTable({ 
+  data, 
+  onItemAdded, 
+  onItemUpdated, 
+  onItemDeleted,
+  openAddDialog,
+  newItemData,
+  itemToEdit,
+  itemToView,
+  itemToDelete
+}: InventoryTableProps) {
   const { toast } = useToast()
+  const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-  const [isAddFormOpen, setIsAddFormOpen] = React.useState(openAddDialog)
-  const [prefilledData, setPrefilledData] = React.useState(newItemData);
-
+  
+  const [isAddFormOpen, setIsAddFormOpen] = React.useState(false)
   const [editingItem, setEditingItem] = React.useState<InventoryItem | null>(null);
   const [viewingItem, setViewingItem] = React.useState<InventoryItem | null>(null);
   const [deletingItem, setDeletingItem] = React.useState<InventoryItem | null>(null);
 
+  const clearUrlParams = () => {
+    router.replace('/dashboard/inventory', { scroll: false });
+  }
 
   React.useEffect(() => {
-    setIsAddFormOpen(openAddDialog);
-    if(openAddDialog) {
-      setPrefilledData(newItemData);
+    if (openAddDialog) {
+      setIsAddFormOpen(true);
     }
-  }, [openAddDialog, newItemData]);
+  }, [openAddDialog]);
 
-  const handleEdit = (item: InventoryItem) => {
-    setEditingItem(item);
-  };
-
-  const handleView = (item: InventoryItem) => {
-    setViewingItem(item);
-  };
+  React.useEffect(() => {
+    if (itemToEdit) {
+      setEditingItem(itemToEdit);
+    }
+  }, [itemToEdit]);
   
-  const handleDelete = (item: InventoryItem) => {
-    setDeletingItem(item);
-  };
+  React.useEffect(() => {
+    if (itemToView) {
+      setViewingItem(itemToView);
+    }
+  }, [itemToView]);
+
+  React.useEffect(() => {
+    if (itemToDelete) {
+      setDeletingItem(itemToDelete);
+    }
+  }, [itemToDelete]);
 
   const confirmDelete = async () => {
     if (deletingItem) {
@@ -121,6 +143,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
         });
       } finally {
         setDeletingItem(null);
+        clearUrlParams();
       }
     }
   };
@@ -223,10 +246,10 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => handleEdit(item)}>Edit Product</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleView(item)}>View Details</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setEditingItem(item)}>Edit Product</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setViewingItem(item)}>View Details</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(item)}>
+              <DropdownMenuItem className="text-destructive" onClick={() => setDeletingItem(item)}>
                 Delete Product
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -258,13 +281,14 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
   const handleAddSuccess = (newItem: InventoryItem) => {
     onItemAdded(newItem);
     setIsAddFormOpen(false)
+    clearUrlParams();
   }
 
   const handleEditSuccess = (updatedItem: InventoryItem) => {
     onItemUpdated(updatedItem);
     setEditingItem(null);
+    clearUrlParams();
   };
-
 
   return (
     <div className="w-full">
@@ -277,12 +301,12 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
           }
           className="max-w-sm"
         />
-        <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
+        <Dialog open={isAddFormOpen} onOpenChange={(isOpen) => {
+          setIsAddFormOpen(isOpen);
+          if (!isOpen) clearUrlParams();
+        }}>
             <DialogTrigger asChild>
-                 <Button className="ml-auto" onClick={() => {
-                   setPrefilledData({});
-                   setIsAddFormOpen(true);
-                 }}>
+                 <Button className="ml-auto" onClick={() => setIsAddFormOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Product
                 </Button>
@@ -297,7 +321,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
                 <div className="py-4">
                     <AddItemForm 
                       onSuccess={handleAddSuccess} 
-                      initialData={prefilledData}
+                      initialData={newItemData}
                     />
                 </div>
             </DialogContent>
@@ -378,7 +402,10 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
         </div>
       </div>
        {/* Edit Dialog */}
-      <Dialog open={!!editingItem} onOpenChange={() => setEditingItem(null)}>
+      <Dialog open={!!editingItem} onOpenChange={(isOpen) => {
+        setEditingItem(isOpen ? editingItem : null);
+        if(!isOpen) clearUrlParams();
+      }}>
         <DialogContent className="sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
@@ -397,7 +424,10 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
       </Dialog>
       
       {/* View Details Dialog */}
-      <Dialog open={!!viewingItem} onOpenChange={() => setViewingItem(null)}>
+      <Dialog open={!!viewingItem} onOpenChange={(isOpen) => {
+        setViewingItem(isOpen ? viewingItem : null);
+        if(!isOpen) clearUrlParams();
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{viewingItem?.name}</DialogTitle>
@@ -438,7 +468,10 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-       <AlertDialog open={!!deletingItem} onOpenChange={() => setDeletingItem(null)}>
+       <AlertDialog open={!!deletingItem} onOpenChange={(isOpen) => {
+          setDeletingItem(isOpen ? deletingItem : null);
+          if(!isOpen) clearUrlParams();
+       }}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>

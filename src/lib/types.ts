@@ -53,6 +53,18 @@ export const ProcessCommandOutputSchema = z.discriminatedUnion('action', [
     reorderLevel: z.number().optional().describe('The reorder level for the new item.'),
   }),
   z.object({
+    action: z.enum(['EDIT_ITEM']),
+    itemName: z.string().describe('The name of the item to edit.'),
+  }),
+  z.object({
+    action: z.enum(['VIEW_ITEM_DETAILS']),
+    itemName: z.string().describe('The name of the item to view details for.'),
+  }),
+  z.object({
+    action: z.enum(['DELETE_ITEM']),
+    itemName: z.string().describe('The name of the item to delete.'),
+  }),
+  z.object({
     action: z.enum(['UNKNOWN_COMMAND']),
     message: z.string().describe('A message explaining that the command was not understood.'),
   }),
@@ -94,6 +106,6 @@ export type GenerateSalesReportOutput = z.infer<typeof GenerateSalesReportOutput
 export type VoiceCommandResponse = {
   success: boolean;
   message: string;
-  action?: 'REFRESH_DASHBOARD' | 'REFRESH_INVENTORY' | 'OPEN_ADD_ITEM_DIALOG' | null;
+  action?: 'REFRESH_DASHBOARD' | 'REFRESH_INVENTORY' | 'OPEN_ADD_ITEM_DIALOG' | 'OPEN_EDIT_DIALOG' | 'OPEN_VIEW_DIALOG' | 'OPEN_DELETE_DIALOG' | null;
   data?: any;
 };
