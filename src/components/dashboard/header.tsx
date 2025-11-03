@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Mic, CircleUser, Settings, LogOut } from "lucide-react"
+import { CircleUser, Settings, LogOut } from "lucide-react"
 
 import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { VoiceCommandDialog } from "./voice-command-dialog"
 import type { VoiceCommandResponse } from "@/lib/types"
 import { useToast } from "@/hooks/use-toast"
 
@@ -30,21 +29,13 @@ export function DashboardHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const { toast } = useToast()
-  const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false)
-  const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false)
-  
-  useEffect(() => {
-    setHasSpeechRecognition(typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window));
-  }, []);
   
   const handleVoiceAction = useCallback((response: VoiceCommandResponse) => {
     const { action, data, success, message } = response;
-    setIsVoiceDialogOpen(false);
 
     if (success) {
       toast({ title: "Success", description: message });
       if (action?.startsWith('REFRESH')) {
-        // Dispatch a global event that pages can listen to for refetching data
         window.dispatchEvent(new Event('datachange'));
       }
     } else {
@@ -78,6 +69,7 @@ export function DashboardHeader() {
       case 'REFRESH_INVENTORY':
       case 'REFRESH_DASHBOARD':
         // The event dispatch handles the refresh, no need to navigate.
+        window.dispatchEvent(new Event('datachange'));
         return;
       default:
         // Handle other cases or do nothing
@@ -105,17 +97,6 @@ export function DashboardHeader() {
         </h1>
       </div>
       <div className="flex items-center gap-2">
-        {hasSpeechRecognition && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={() => setIsVoiceDialogOpen(true)}
-          >
-            <Mic className="size-5" />
-            <span className="sr-only">Use Voice Command</span>
-          </Button>
-        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
@@ -142,7 +123,6 @@ export function DashboardHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {hasSpeechRecognition && <VoiceCommandDialog open={isVoiceDialogOpen} onOpenChange={setIsVoiceDialogOpen} onAction={handleVoiceAction} />}
     </header>
   )
 }
