@@ -19,6 +19,12 @@ export default function InventoryPage() {
 
     useEffect(() => {
         fetchInventory();
+
+        const handleDataChange = () => fetchInventory();
+        window.addEventListener('datachange', handleDataChange);
+        return () => {
+            window.removeEventListener('datachange', handleDataChange);
+        };
     }, [fetchInventory]);
 
     if (loading) {

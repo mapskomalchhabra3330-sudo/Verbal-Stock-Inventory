@@ -28,9 +28,10 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchData();
     
-    window.addEventListener('datachange', fetchData);
+    const handleDataChange = () => fetchData();
+    window.addEventListener('datachange', handleDataChange);
     return () => {
-      window.removeEventListener('datachange', fetchData);
+      window.removeEventListener('datachange', handleDataChange);
     }
   }, [fetchData]);
 

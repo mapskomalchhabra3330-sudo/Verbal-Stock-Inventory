@@ -32,34 +32,23 @@ export function DashboardHeader() {
   const { toast } = useToast()
   const [isVoiceDialogOpen, setIsVoiceDialogOpen] = useState(false)
   const [hasSpeechRecognition, setHasSpeechRecognition] = useState(false)
-  const [lastAction, setLastAction] = useState<string | null>(null);
-
+  
   useEffect(() => {
     setHasSpeechRecognition(typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window));
   }, []);
   
-  useEffect(() => {
-    if (lastAction) {
-        // A simple way to trigger a re-fetch on the pages that need it.
-        // In a real app, this might be a more sophisticated state management solution.
-        window.dispatchEvent(new Event('datachange'));
-        setLastAction(null);
-    }
-  }, [lastAction]);
-
   const handleVoiceAction = useCallback((response: VoiceCommandResponse) => {
     const { action, data, success, message } = response;
     setIsVoiceDialogOpen(false);
 
-    if (action?.startsWith('REFRESH')) {
-        if (success) {
-            toast({ title: "Success", description: message });
-            // Instead of router.refresh(), we'll let the pages handle re-fetching.
-            // This avoids the "flash" of a refresh.
-            setLastAction(action);
-        } else {
-            toast({ variant: "destructive", title: "Error", description: message });
-        }
+    if (success) {
+      toast({ title: "Success", description: message });
+      if (action?.startsWith('REFRESH')) {
+        // Dispatch a global event that pages can listen to for refetching data
+        window.dispatchEvent(new Event('datachange'));
+      }
+    } else {
+        toast({ variant: "destructive", title: "Error", description: message });
         return;
     }
 
@@ -86,12 +75,17 @@ export function DashboardHeader() {
         if (!data?.itemName) return;
         params.set('deleteItem', data.itemName);
         break;
+      case 'REFRESH_INVENTORY':
+      case 'REFRESH_DASHBOARD':
+        // The event dispatch handles the refresh, no need to navigate.
+        return;
       default:
-        if(message) {
+        // Handle other cases or do nothing
+        if(message && !success) {
             toast({
-                title: success ? "Information" : "Error",
+                title: "Information",
                 description: message,
-                variant: success ? "default" : "destructive"
+                variant: "default"
             });
         }
         return;
