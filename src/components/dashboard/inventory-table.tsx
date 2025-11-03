@@ -59,7 +59,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
-  const [isAddFormOpen, setIsAddFormOpen] = React.useState(openAddDialog)
+  const [isAddFormOpen, setIsAddFormOpen] = React.useState(false)
   const [prefilledData, setPrefilledData] = React.useState(newItemData);
 
   React.useEffect(() => {
@@ -216,7 +216,7 @@ export function InventoryTable({ data, openAddDialog = false, newItemData, onIte
         />
         <Dialog open={isAddFormOpen} onOpenChange={setIsAddFormOpen}>
             <DialogTrigger asChild>
-                 <Button className="ml-auto">
+                 <Button className="ml-auto" onClick={() => setIsAddFormOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add Product
                 </Button>
