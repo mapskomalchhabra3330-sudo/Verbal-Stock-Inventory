@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview This file defines a Genkit flow for processing natural language voice commands.
  * It interprets the user's intent and extracts relevant entities to return a structured action.

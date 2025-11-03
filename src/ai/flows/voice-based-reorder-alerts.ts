@@ -1,4 +1,3 @@
-'use server';
 /**
  * @fileOverview This file defines a Genkit flow for setting reorder alerts via voice command.
  *
