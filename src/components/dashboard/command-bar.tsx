@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { Mic, Send, Bot, User, CornerDownLeft, BrainCircuit } from 'lucide-react'
+import { Mic, Send, Bot, User, CornerDownLeft, BrainCircuit, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -20,8 +20,10 @@ type Message = {
 
 export function CommandBar() {
   const [inputValue, setInputValue] = useState('')
-  const [messages, setMessages] = useState<Message[]>([])
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([
+      { id: 'bot-initial', text: 'Hello! How can I help you manage your inventory today?', sender: 'bot' }
+  ])
+  const [isOpen, setIsOpen] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   const handleAction = useCallback((response: VoiceCommandResponse) => {
@@ -64,7 +66,6 @@ export function CommandBar() {
   
   const onFinal = useCallback((transcript: string) => {
     stopListening()
-    setIsExpanded(true); // Keep it expanded after speech
     processCommand(transcript)
   },[processCommand]);
 
@@ -76,13 +77,13 @@ export function CommandBar() {
   } = useSpeechRecognition({ onTranscriptFinal: onFinal })
   
   useEffect(() => {
-    if (scrollAreaRef.current) {
+    if (isOpen && scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
         if (viewport) {
             viewport.scrollTop = viewport.scrollHeight;
         }
     }
-  }, [messages])
+  }, [messages, isOpen])
 
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -95,65 +96,74 @@ export function CommandBar() {
     } else {
       startListening()
       setInputValue('');
+       setMessages(prev => prev.map(m => m.text === 'Listening...' ? { ...m, text: 'Hello! How can I help you manage your inventory today?' } : m));
       setMessages(prev => [...prev, { id: `bot-${Date.now()}`, text: 'Listening...', sender: 'bot' }]);
     }
   }
 
-  const handleTextareaFocus = () => {
-    setIsExpanded(true);
+  if (!isOpen) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button size="icon" className="rounded-full w-16 h-16 shadow-lg" onClick={() => setIsOpen(true)}>
+          <Bot className="w-8 h-8" />
+        </Button>
+      </div>
+    )
   }
   
   return (
-    <div className="fixed bottom-4 right-4 z-50 w-full max-w-sm">
-      <div className="relative rounded-lg border bg-card text-card-foreground shadow-xl transition-all">
-        {isExpanded && (
-          <div className="border-b">
-            <div className="p-3">
-              <h3 className="font-semibold text-lg">Command Assistant</h3>
-              <p className="text-sm text-muted-foreground">Ask me to manage your inventory.</p>
+    <div className="fixed bottom-6 right-6 z-50 w-full max-w-sm">
+      <div className="relative rounded-lg border bg-card text-card-foreground shadow-xl transition-all h-[600px] flex flex-col">
+        <div className="flex items-center justify-between border-b p-3">
+            <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full border bg-background">
+                    <Bot className="size-6 text-primary"/>
+                </div>
+                <div>
+                    <h3 className="font-semibold text-lg">Command Assistant</h3>
+                    <p className="text-sm text-muted-foreground">Your AI inventory partner</p>
+                </div>
             </div>
-            <ScrollArea className="h-64 p-3" ref={scrollAreaRef}>
-              <div className="space-y-4">
-                {messages.map(msg => (
-                  <div key={msg.id} className={cn("flex items-start gap-3", msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
-                     {msg.sender === 'bot' && (
-                        <div className="p-2 rounded-full border bg-background">
-                            {msg.isProcessing ? <BrainCircuit className="size-5 animate-spin text-primary" /> : <Bot className="size-5 text-primary"/>}
-                        </div>
-                     )}
-                    <div className={cn("max-w-[75%] rounded-lg p-3 text-sm", msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                      {msg.text}
+            <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+                <X className="size-5" />
+            </Button>
+        </div>
+        <ScrollArea className="flex-1 p-3" ref={scrollAreaRef}>
+            <div className="space-y-4">
+            {messages.map(msg => (
+                <div key={msg.id} className={cn("flex items-start gap-3", msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
+                    {msg.sender === 'bot' && (
+                    <div className="p-2 rounded-full border bg-background">
+                        {msg.isProcessing ? <BrainCircuit className="size-5 animate-spin text-primary" /> : <Bot className="size-5 text-primary"/>}
                     </div>
-                     {msg.sender === 'user' && (
-                        <div className="p-2 rounded-full border bg-background">
-                           <User className="size-5" />
-                        </div>
-                     )}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
-        )}
-        <form onSubmit={handleFormSubmit} className="relative p-3">
+                    )}
+                <div className={cn("max-w-[75%] rounded-lg p-3 text-sm", msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                    {msg.text}
+                </div>
+                    {msg.sender === 'user' && (
+                    <div className="p-2 rounded-full border bg-background">
+                        <User className="size-5" />
+                    </div>
+                    )}
+                </div>
+            ))}
+            </div>
+        </ScrollArea>
+        <form onSubmit={handleFormSubmit} className="relative p-3 border-t">
           <Textarea
             placeholder={isListening ? "Listening..." : "Type a command or use the mic..."}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onFocus={handleTextareaFocus}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleFormSubmit(e as any);
               }
                if (e.key === 'Escape') {
-                setIsExpanded(false);
+                setIsOpen(false);
               }
             }}
-            className={cn(
-                "min-h-[48px] resize-none pr-20",
-                isExpanded ? 'h-20' : 'h-12'
-            )}
+            className="min-h-[48px] resize-none pr-20"
             readOnly={isListening}
           />
           <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1">
