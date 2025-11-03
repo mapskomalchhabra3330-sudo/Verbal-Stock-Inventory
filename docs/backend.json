@@ -1,0 +1,185 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the VerbalStock application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the user.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the user."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "email"
+      ]
+    },
+    "InventoryItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "InventoryItem",
+      "type": "object",
+      "description": "Represents an item in the inventory.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the inventory item."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the inventory item."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the inventory item."
+        },
+        "quantity": {
+          "type": "number",
+          "description": "The quantity of the item in stock."
+        },
+        "reorderThreshold": {
+          "type": "number",
+          "description": "The quantity at which a reorder alert should be triggered."
+        },
+        "price": {
+          "type": "number",
+          "description": "The price of the item."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N InventoryItem)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "quantity",
+        "reorderThreshold",
+        "price",
+        "userId"
+      ]
+    },
+    "Report": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Report",
+      "type": "object",
+      "description": "Represents a generated report for inventory data.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the report."
+        },
+        "reportType": {
+          "type": "string",
+          "description": "The type of report (e.g., daily sales, stock valuation)."
+        },
+        "dateGenerated": {
+          "type": "string",
+          "description": "The date and time the report was generated.",
+          "format": "date-time"
+        },
+        "data": {
+          "type": "string",
+          "description": "The data contained in the report (e.g., JSON, CSV)."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Report)"
+        }
+      },
+      "required": [
+        "id",
+        "reportType",
+        "dateGenerated",
+        "data",
+        "userId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles. The `userId` parameter is the Firebase Authentication UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, corresponding to their Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/inventoryItems/{inventoryItemId}",
+        "definition": {
+          "entityName": "InventoryItem",
+          "schema": {
+            "$ref": "#/backend/entities/InventoryItem"
+          },
+          "description": "Stores inventory items owned by a specific user. The `userId` parameter matches the item's `userId` field. Path-based ownership ensures only the user can manage these items.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who owns this inventory item."
+            },
+            {
+              "name": "inventoryItemId",
+              "description": "The unique identifier for the inventory item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/reports/{reportId}",
+        "definition": {
+          "entityName": "Report",
+          "schema": {
+            "$ref": "#/backend/entities/Report"
+          },
+          "description": "Stores reports generated by a specific user. The `userId` parameter matches the report's `userId` field. Path-based ownership ensures only the user can access their reports.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who generated this report."
+            },
+            {
+              "name": "reportId",
+              "description": "The unique identifier for the report."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to securely manage user data, inventory items, and reports for the VerbalStock application, prioritizing authorization independence and clear access control. User-owned data is stored under the `/users/{userId}` path, enabling simple and secure ownership-based rules. Inventory items and reports are subcollections under the user, ensuring that only the user can access their respective data. This design removes the need for `get()` calls in the security rules, thus preventing hierarchical authorization dependencies and promoting atomic operations. The chosen structure effectively segregates user data, allowing for precise security rules based on path-based ownership, which simplifies access control and enhances debuggability. QAPs are satisfied by the inherent security model. Each user's data is kept separate, preventing unauthorized access, and the path-based ownership ensures only authenticated users can access their own inventory and reports."
+  }
+}
