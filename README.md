@@ -1,5 +1,3 @@
-# Firebase Studio
+# Verbal Stock Inventory
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+This voice-enabled inventory app helps shopkeepers manage stock effortlessly using simple verbal commands. Instead of manually entering data, users can speak commands like “add 10 apples,” “delete eggs,” or “update price of rice to 10 rupees,” and the system instantly updates inventory records. The app tracks item names, quantities, prices, and stock changes in real time, reducing errors and saving time during busy store operations. With fast voice recognition, offline support, and clear visual summaries, it becomes a reliable assistant for grocery stores and small shops. Manage your entire inventory hands-free with speed, accuracy, and convenience.
